@@ -10,6 +10,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 
+/**
+ * A composable function that provides a UI component (Button) to select a directory from the system.
+ *
+ * This function launches the system's directory picker, requests persistable URI permissions
+ * for the selected folder to ensure long-term access, and updates the [SongPlayerVM]
+ * to begin processing or playing music from the chosen location.
+ *
+ * @param viewModel The [SongPlayerVM] instance used to handle the music logic once a folder is selected.
+ */
 @Composable
 fun PickAudioFolder(
     viewModel : SongPlayerVM = viewModel()
@@ -22,11 +31,12 @@ fun PickAudioFolder(
         context.contentResolver.takePersistableUriPermission(
             result, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         )
+        // this return the folder uri that we can use to load the songs and stored in result inline variable
         viewModel.PlayMusic(result)
 
     }
     Button(onClick = {folderPickerLauncher.launch(null) }  ) {
-        Text("Use this Folder")
+        Text("Use this Folder everytime")
     }
 
 
