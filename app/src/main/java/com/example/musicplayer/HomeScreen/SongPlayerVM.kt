@@ -31,6 +31,10 @@ class SongPlayerVM(application: Application) : AndroidViewModel(application) {
     var folderUri by mutableStateOf<Uri?>(null)
         private set
 
+
+
+
+
     // Opens a private storage file named "MusicPlayerPrefs" to save and load settings.
     private val sharedPreferences = application.getSharedPreferences("MusicPlayerPrefs", Context.MODE_PRIVATE)
 
