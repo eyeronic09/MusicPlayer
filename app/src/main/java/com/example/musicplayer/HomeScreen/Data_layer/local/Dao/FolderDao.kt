@@ -13,7 +13,7 @@ interface FolderDao {
     suspend fun insertFolder(folder: FolderEntity)
 
     @Query("SELECT * FROM Audio_File ")
-     fun getSelectFolders() : Flow<List<FolderEntity>>
+    suspend fun getSelectFolders(): Flow<List<FolderEntity>>
 
     @Delete
     suspend fun clear(folder: FolderEntity)
