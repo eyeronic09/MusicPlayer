@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface FolderDao {
     @Insert
-    suspend fun InstertFolder(folder: FolderEntity)
+    suspend fun insertFolder(folder: FolderEntity)
 
     @Query("SELECT * FROM Audio_File ")
      fun getSelectFolders() : Flow<List<FolderEntity>>
