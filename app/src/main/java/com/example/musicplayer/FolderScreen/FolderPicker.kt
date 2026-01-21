@@ -1,4 +1,4 @@
-package com.example.musicplayer.HomeScreen
+package com.example.musicplayer.FolderScreen
 
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -20,9 +20,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
  * @param viewModel The [SongPlayerVM] instance used to handle the music logic once a folder is selected.
  */
 @Composable
-fun PickAudioFolder(
-    viewModel : SongPlayerVM = viewModel()
-) {
+fun PickAudioFolder() {
     val context = LocalContext.current
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
@@ -31,8 +29,6 @@ fun PickAudioFolder(
         context.contentResolver.takePersistableUriPermission(
             result, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         )
-        // this return the folder uri that we can use to load the songs and stored in result inline variable
-        viewModel.PlayMusic(result)
 
     }
     Button(onClick = {folderPickerLauncher.launch(null) }  ) {

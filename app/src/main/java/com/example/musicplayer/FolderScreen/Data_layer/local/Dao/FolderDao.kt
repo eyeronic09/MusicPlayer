@@ -1,10 +1,10 @@
-package com.example.musicplayer.HomeScreen.Data_layer.local.Dao
+package com.example.musicplayer.FolderScreen.Data_layer.local.Dao
 
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
-import com.example.musicplayer.HomeScreen.Data_layer.local.Entity.FolderEntity
+import com.example.musicplayer.FolderScreen.Data_layer.local.Entity.FolderEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -13,7 +13,7 @@ interface FolderDao {
     suspend fun insertFolder(folder: FolderEntity)
 
     @Query("SELECT * FROM Audio_File ")
-    suspend fun getSelectFolders(): Flow<List<FolderEntity>>
+    fun getSelectFolders(): Flow<List<FolderEntity>>
 
     @Delete
     suspend fun clear(folder: FolderEntity)

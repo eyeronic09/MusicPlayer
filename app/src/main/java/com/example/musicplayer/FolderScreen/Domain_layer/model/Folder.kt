@@ -1,4 +1,4 @@
-package com.example.musicplayer.HomeScreen.Domain_layer.model
+package com.example.musicplayer.FolderScreen.Domain_layer.model
 
 
 data class Folder(

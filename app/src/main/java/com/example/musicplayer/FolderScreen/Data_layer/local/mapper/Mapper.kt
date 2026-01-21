@@ -1,8 +1,8 @@
-package com.example.musicplayer.HomeScreen.Data_layer.local.mapper
+package com.example.musicplayer.FolderScreen.Data_layer.local.mapper
 
 import androidx.core.net.toUri
-import com.example.musicplayer.HomeScreen.Data_layer.local.Entity.FolderEntity
-import com.example.musicplayer.HomeScreen.Domain_layer.model.Folder
+import com.example.musicplayer.FolderScreen.Data_layer.local.Entity.FolderEntity
+import com.example.musicplayer.FolderScreen.Domain_layer.model.Folder
 
 fun FolderEntity.toDomain(): Folder {
     return (
