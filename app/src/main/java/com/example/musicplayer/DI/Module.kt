@@ -3,14 +3,10 @@ package com.example.musicplayer.DI
 import android.app.Application
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.room.Room.databaseBuilder
 import com.example.musicplayer.FolderScreen.Data_layer.local.DataSources.FolderLocalDataSource
 import com.example.musicplayer.FolderScreen.Data_layer.local.DataSources.FolderLocalDataSourceImpl
-import com.example.musicplayer.FolderScreen.Data_layer.local.Database.Folder_DB
-import com.example.musicplayer.FolderScreen.SongPlayerVM
-import org.koin.android.ext.koin.androidApplication
+import com.example.musicplayer.FolderScreen.Data_layer.local.Database.FoldersDatabase
 import org.koin.android.ext.koin.androidContext
-import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -34,26 +30,12 @@ val appModule: Module = module {
         }
     }
 
-    viewModel {
-        SongPlayerVM(get())
-    }
-    single {
-        databaseBuilder(
-            context = androidApplication(),
-            klass = Folder_DB::
-            class.java,
-            name = "Audio_File"
-        ).build()
-    }
 
     single {
-        get<Folder_DB>().dao
+        get<FoldersDatabase>().dao
     }
     single<FolderLocalDataSource> {
         FolderLocalDataSourceImpl(get())
-    }
-    single {
-        SongPlayerVM(get())
     }
 
 
