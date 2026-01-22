@@ -80,8 +80,10 @@ dependencies {
 
     //navigation
     implementation("cafe.adriel.voyager:voyager-navigator:1.0.0")
-
-    // Optional but recommended
     implementation("cafe.adriel.voyager:voyager-screenmodel:1.0.0")
     implementation("cafe.adriel.voyager:voyager-transitions:1.0.0")
+
+    //FilePicker
+    implementation("io.github.vinceglb:filekit-dialogs-compose:0.12.0")
+
 }

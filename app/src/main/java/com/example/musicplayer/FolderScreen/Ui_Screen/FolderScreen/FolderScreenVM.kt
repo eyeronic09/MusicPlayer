@@ -13,66 +13,65 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class FolderScreenUiState(
-    val folders : List<Folder> = emptyList(),
-    val isLoading : Boolean = false,
-    val isAddButtonClicked : Boolean = false,
-    val error : String = ""
+    val folders: List<Folder> = emptyList(),
+    val isLoading: Boolean = false,
+    val isAddButtonClicked: Boolean = false,
+    val error: String = "" ,
+    val userSelectedFolder : Uri? = null
+
 )
+
 sealed interface FolderScreenUiEvent {
-    data object addFolderButton : FolderScreenUiEvent
+
     data class AddFolder(val uri: Uri) : FolderScreenUiEvent
 }
-class FolderScreenVM (
+
+class FolderScreenVM(
     private val repository: FolderRepository
 ) : ViewModel() {
 
-
     private val _screenUiState = MutableStateFlow(FolderScreenUiState())
-    val screenUiState : StateFlow<FolderScreenUiState> = _screenUiState.asStateFlow()
+    val screenUiState: StateFlow<FolderScreenUiState> = _screenUiState.asStateFlow()
 
     init {
         loadFolder()
     }
 
-    fun onEvent(event: FolderScreenUiEvent){
-        when(event){
-
+    fun onEvent(event: FolderScreenUiEvent) {
+        when (event) {
             is FolderScreenUiEvent.AddFolder -> {
                 addFolder(userSelectedFolder = event.uri)
-            }
-            is FolderScreenUiEvent.addFolderButton -> {
-
             }
         }
     }
 
-    fun loadFolder(){
+    fun loadFolder() {
         viewModelScope.launch {
-            _screenUiState.update{ it.copy(isLoading = true) }
+            _screenUiState.update { it.copy(isLoading = true) }
             repository.getSelectFolders().collect { value ->
-                _screenUiState.update { it.copy(
-                    folders = value,
-                    isLoading = false,
+                _screenUiState.update {
+                    it.copy(
+                        folders = value,
+                        isLoading = false,
                     )
                 }
             }
         }
     }
 
-    fun addFolder(userSelectedFolder : Uri){
-        viewModelScope.launch(context = Dispatchers.IO){
+    fun addFolder(userSelectedFolder: Uri) {
+        viewModelScope.launch(context = Dispatchers.IO) {
             val folder = Folder(
-                id = 0 ,
+                id = 0,
                 folderUri = userSelectedFolder.toString(),
-                folderName = userSelectedFolder.lastPathSegment ?: "Unknow Folder"
+                folderName = userSelectedFolder.lastPathSegment ?: "Unknown Folder"
             )
             repository.insertFolder(folder)
-            _screenUiState.update {it -> it.copy(
-                isAddButtonClicked = true,
-            )
-        }
+            _screenUiState.update { it ->
+                it.copy(
+                    isAddButtonClicked = true,
+                )
+            }
         }
     }
-
-
 }
