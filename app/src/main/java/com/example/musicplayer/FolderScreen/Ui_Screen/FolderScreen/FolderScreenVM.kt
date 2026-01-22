@@ -26,24 +26,22 @@ class FolderScreenVM (
     private val repository: FolderRepository
 ) : ViewModel() {
 
-    init {
-        loadFolder()
-    }
+
     private val _screenUiState = MutableStateFlow(FolderScreenUiState())
     val screenUiState : StateFlow<FolderScreenUiState> = _screenUiState.asStateFlow()
 
+    init {
+        loadFolder()
+    }
+
     fun onEvent(event: FolderScreenUiEvent){
         when(event){
+
             is FolderScreenUiEvent.AddFolder -> {
                 addFolder(userSelectedFolder = event.uri)
             }
             is FolderScreenUiEvent.addFolderButton -> {
 
-            }
-            else -> {
-                _screenUiState.update { it ->
-                    it.copy(error = "error")
-                }
             }
         }
     }

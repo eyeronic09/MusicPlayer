@@ -60,6 +60,11 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
+
+    //Player
     implementation("androidx.media3:media3-exoplayer:1.2.1")
     implementation("androidx.media3:media3-ui:1.2.1")
 
@@ -73,4 +78,10 @@ dependencies {
     implementation("androidx.room:room-ktx:$room_version")
     kapt ("androidx.room:room-compiler:$room_version")
 
+    //navigation
+    implementation("cafe.adriel.voyager:voyager-navigator:1.0.0")
+
+    // Optional but recommended
+    implementation("cafe.adriel.voyager:voyager-screenmodel:1.0.0")
+    implementation("cafe.adriel.voyager:voyager-transitions:1.0.0")
 }

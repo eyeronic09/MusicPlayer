@@ -6,7 +6,11 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.example.musicplayer.FolderScreen.Data_layer.local.DataSources.FolderLocalDataSource
 import com.example.musicplayer.FolderScreen.Data_layer.local.DataSources.FolderLocalDataSourceImpl
 import com.example.musicplayer.FolderScreen.Data_layer.local.Database.FoldersDatabase
+import com.example.musicplayer.FolderScreen.Data_layer.local.Repository.FolderRepositoryImpl
+import com.example.musicplayer.FolderScreen.Domain_layer.repostiory.FolderRepository
+import com.example.musicplayer.FolderScreen.Ui_Screen.FolderScreen.FolderScreenVM
 import org.koin.android.ext.koin.androidContext
+import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -30,13 +34,21 @@ val appModule: Module = module {
         }
     }
 
+    viewModel { FolderScreenVM(get()) }
+
+    single {
+        FoldersDatabase.getIntance(androidContext())
+    }
 
     single {
         get<FoldersDatabase>().dao
     }
+
     single<FolderLocalDataSource> {
         FolderLocalDataSourceImpl(get())
     }
 
-
+    single<FolderRepository> {
+        FolderRepositoryImpl(get())
+    }
 }
