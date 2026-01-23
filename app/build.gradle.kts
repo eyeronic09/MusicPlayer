@@ -8,14 +8,12 @@ plugins {
 
 android {
     namespace = "com.example.musicplayer"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.musicplayer"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -53,6 +51,9 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.documentfile)
+    implementation(libs.androidx.navigation.compose)
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -73,15 +74,10 @@ dependencies {
     implementation("io.insert-koin:koin-androidx-compose:3.5.0")
 
     //Room
-    val room_version = "2.8.3"
+    val room_version = "2.7.0"
     implementation("androidx.room:room-runtime:$room_version")
     implementation("androidx.room:room-ktx:$room_version")
     kapt ("androidx.room:room-compiler:$room_version")
-
-    //navigation
-    implementation("cafe.adriel.voyager:voyager-navigator:1.0.0")
-    implementation("cafe.adriel.voyager:voyager-screenmodel:1.0.0")
-    implementation("cafe.adriel.voyager:voyager-transitions:1.0.0")
 
     //FilePicker
     implementation("io.github.vinceglb:filekit-dialogs-compose:0.12.0")

@@ -11,19 +11,22 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import androidx.core.net.toUri
 
 data class FolderScreenUiState(
     val folders: List<Folder> = emptyList(),
     val isLoading: Boolean = false,
     val isAddButtonClicked: Boolean = false,
-    val error: String = "" ,
-    val userSelectedFolder : Uri? = null
-
-)
+    val isFolderClick: Boolean = false,
+    val error: String = "",
+    val userSelectedFolderToAdd : Uri? = null,
+    val selectedUriToList: Uri? = null
+    )
 
 sealed interface FolderScreenUiEvent {
-
     data class AddFolder(val uri: Uri) : FolderScreenUiEvent
+    data class SelectedUriToList(val uri: String) : FolderScreenUiEvent
+    object NavigateBack : FolderScreenUiEvent
 }
 
 class FolderScreenVM(
@@ -41,6 +44,19 @@ class FolderScreenVM(
         when (event) {
             is FolderScreenUiEvent.AddFolder -> {
                 addFolder(userSelectedFolder = event.uri)
+            }
+            is FolderScreenUiEvent.SelectedUriToList -> {
+                _screenUiState.update {
+                    it.copy(
+                        isFolderClick = true,
+                        selectedUriToList = event.uri.toUri()
+                    )
+                }
+            }
+            FolderScreenUiEvent.NavigateBack -> {
+                _screenUiState.update {
+                    it.copy(isFolderClick = false, selectedUriToList = null)
+                }
             }
         }
     }
@@ -67,11 +83,12 @@ class FolderScreenVM(
                 folderName = userSelectedFolder.lastPathSegment ?: "Unknown Folder"
             )
             repository.insertFolder(folder)
-            _screenUiState.update { it ->
+            _screenUiState.update {
                 it.copy(
                     isAddButtonClicked = true,
                 )
             }
         }
     }
+
 }
