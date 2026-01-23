@@ -1,5 +1,7 @@
 package com.example.musicplayer.FolderScreen.Ui_Screen.FolderScreen
 
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,6 +14,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import androidx.core.net.toUri
+import androidx.documentfile.provider.DocumentFile
+import kotlin.collections.emptyList
 
 data class FolderScreenUiState(
     val folders: List<Folder> = emptyList(),
@@ -91,4 +95,17 @@ class FolderScreenVM(
         }
     }
 
+    fun listFile(context : Context, uri : Uri  ) : List<Uri> {
+        return try {
+            val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            context.contentResolver.takePersistableUriPermission(uri, takeFlags)
+            val documentFile = DocumentFile.fromTreeUri(context, uri)
+            documentFile?.listFiles()?.mapNotNull { f ->
+                if (f.exists()) f.uri else null
+            } ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
 }
