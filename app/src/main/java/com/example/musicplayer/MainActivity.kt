@@ -12,6 +12,7 @@ import androidx.navigation.navArgument
 import com.example.musicplayer.Core_Screen.Screen
 import com.example.musicplayer.FolderScreen.Ui_Screen.FolderScreen.FolderScreen
 import com.example.musicplayer.FolderScreen.Ui_Screen.FolderScreen.ListScreen
+import com.example.musicplayer.PlayerScreen.PlayerScreen
 import com.example.musicplayer.ui.theme.MusicPlayerTheme
 
 class MainActivity : ComponentActivity() {
@@ -29,6 +30,9 @@ class MainActivity : ComponentActivity() {
                         FolderScreen(
                             onNavigateToList = { uri ->
                                 navController.navigate(Screen.List_Screen.passUri(uri))
+                            },
+                            onNavigateToPlayer = { folderId ->
+                                navController.navigate(Screen.PlayerScreen.createRoute(folderId))
                             }
                         )
                     }
@@ -42,6 +46,18 @@ class MainActivity : ComponentActivity() {
                     ) { backStackEntry ->
                         val uri = backStackEntry.arguments?.getString("uri") ?: ""
                         ListScreen(uri = uri)
+                    }
+                    composable(
+                        route = Screen.PlayerScreen.route,
+                        arguments = listOf(
+                            navArgument("folderId") {
+                                type = NavType.LongType
+                            }
+                        )
+                    ){ backStackEntry ->
+                        val folderId = backStackEntry.arguments?.getLong("folderId") ?: 1
+                        PlayerScreen(navController = navController, folderId = folderId)
+
                     }
                 }
             }

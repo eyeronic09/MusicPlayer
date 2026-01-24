@@ -10,7 +10,7 @@ class FolderLocalDataSourceImpl(private val dao: FolderDao) : FolderLocalDataSou
     }
 
     override fun getSelectFolders(): Flow<List<FolderEntity>> {
-        return dao.getSelectFolders()
+        return dao.getAllFolders()
     }
 
     override suspend fun clear(folder: FolderEntity) {

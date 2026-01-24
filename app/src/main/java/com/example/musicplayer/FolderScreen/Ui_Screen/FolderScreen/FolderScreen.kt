@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -28,7 +29,8 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun FolderScreen(
     viewModel: FolderScreenVM = koinViewModel(),
-    onNavigateToList: (String) -> Unit
+    onNavigateToList: (String) -> Unit,
+    onNavigateToPlayer : (Long) -> Unit
 ) {
     val state by viewModel.screenUiState.collectAsStateWithLifecycle()
 
@@ -66,6 +68,9 @@ fun FolderScreen(
                         folder = folder,
                         onClickList = {
                             onNavigateToList(folder.folderUri)
+                        },
+                        onClickPlay = {
+                            onNavigateToPlayer(folder.id.toLong())
                         }
                     )
                 }
@@ -83,7 +88,9 @@ fun ListScreen(
     val files = viewModel.listFile(context, uri.toUri())
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
     ) {
         Text(text = "Files in: $uri")
         LazyColumn(modifier = Modifier.padding(top = 16.dp)) {
@@ -95,4 +102,10 @@ fun ListScreen(
             }
         }
     }
+}
+
+@Preview
+@Composable
+private fun FolderScreenPreview() {
+    ListScreen(uri = "")
 }
