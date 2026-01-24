@@ -16,5 +16,9 @@ class FolderLocalDataSourceImpl(private val dao: FolderDao) : FolderLocalDataSou
     override suspend fun clear(folder: FolderEntity) {
        return dao.clear(folder)
     }
+
+    override suspend fun getSelectedFolder(folderId: Int): FolderEntity? {
+        return dao.getSelectedFolder(folderId)
+    }
 }
 

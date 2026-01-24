@@ -18,4 +18,8 @@ interface FolderDao {
     @Delete
     suspend fun clear(folder: FolderEntity)
 
+
+    @Query("SELECT * FROM Audio_File WHERE id = :folderId ")
+    suspend fun getSelectedFolder(folderId : Int ) : FolderEntity?
+
 }

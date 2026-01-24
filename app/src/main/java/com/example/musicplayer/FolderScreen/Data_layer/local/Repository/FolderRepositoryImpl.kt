@@ -1,6 +1,7 @@
 package com.example.musicplayer.FolderScreen.Data_layer.local.Repository
 
 import com.example.musicplayer.FolderScreen.Data_layer.local.DataSources.FolderLocalDataSource
+import com.example.musicplayer.FolderScreen.Data_layer.local.Entity.FolderEntity
 import com.example.musicplayer.FolderScreen.Data_layer.local.mapper.toDomain
 import com.example.musicplayer.FolderScreen.Data_layer.local.mapper.toEntity
 import com.example.musicplayer.FolderScreen.Domain_layer.model.Folder
@@ -25,6 +26,17 @@ class FolderRepositoryImpl(private val source: FolderLocalDataSource) : FolderRe
     // covert to entity this is will passed to local data source and clear
     override suspend fun clear(folder: Folder) {
        return source.clear(folder.toEntity())
+    }
+
+    override suspend fun getSelectedFolder(folderId: Int): Folder? {
+        return source.getSelectedFolder(folderId)?.let { entity ->
+            Folder(
+                id = entity.id,
+                folderUri = entity.folderUri.toString(),
+                folderName = entity.folderName
+            )
+
+        }
     }
 
 }

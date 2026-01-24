@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -14,11 +15,16 @@ import com.example.musicplayer.FolderScreen.Ui_Screen.FolderScreen.FolderScreen
 import com.example.musicplayer.FolderScreen.Ui_Screen.FolderScreen.ListScreen
 import com.example.musicplayer.PlayerScreen.PlayerScreen
 import com.example.musicplayer.ui.theme.MusicPlayerTheme
+import org.koin.androidx.compose.koinViewModel
 
 class MainActivity : ComponentActivity() {
+    private lateinit var exoPlayer: ExoPlayer
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        exoPlayer = ExoPlayer.Builder(this).build()
         setContent {
             MusicPlayerTheme {
                 val navController = rememberNavController()
@@ -55,12 +61,21 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     ){ backStackEntry ->
-                        val folderId = backStackEntry.arguments?.getLong("folderId") ?: 1
-                        PlayerScreen(navController = navController, folderId = folderId)
+                        val folderId = backStackEntry.arguments?.getLong("folderId") ?: 1L
+                        PlayerScreen(
+                            navController = navController,
+                            folderId = folderId ,
+                            exoPlayer = exoPlayer,
+                            viewModel = koinViewModel())
 
                     }
                 }
             }
         }
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        exoPlayer.release()
     }
 }

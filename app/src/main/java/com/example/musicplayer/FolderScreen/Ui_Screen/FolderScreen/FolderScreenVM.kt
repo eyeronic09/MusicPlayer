@@ -1,10 +1,14 @@
 package com.example.musicplayer.FolderScreen.Ui_Screen.FolderScreen
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.core.net.toUri
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.exoplayer.ExoPlayer
 import com.example.musicplayer.FolderScreen.Domain_layer.model.Folder
 import com.example.musicplayer.FolderScreen.Domain_layer.repostiory.FolderRepository
 import kotlinx.coroutines.Dispatchers
@@ -13,9 +17,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import androidx.core.net.toUri
-import androidx.documentfile.provider.DocumentFile
-import kotlin.collections.emptyList
 
 data class FolderScreenUiState(
     val folders: List<Folder> = emptyList(),
@@ -34,8 +35,11 @@ sealed interface FolderScreenUiEvent {
 }
 
 class FolderScreenVM(
-    private val repository: FolderRepository
+    private val repository: FolderRepository,
+    @SuppressLint("StaticFieldLeak") private val context: Context
 ) : ViewModel() {
+
+
 
     private val _screenUiState = MutableStateFlow(FolderScreenUiState())
     val screenUiState: StateFlow<FolderScreenUiState> = _screenUiState.asStateFlow()

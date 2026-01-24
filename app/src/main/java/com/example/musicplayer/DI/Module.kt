@@ -9,6 +9,7 @@ import com.example.musicplayer.FolderScreen.Data_layer.local.Database.FoldersDat
 import com.example.musicplayer.FolderScreen.Data_layer.local.Repository.FolderRepositoryImpl
 import com.example.musicplayer.FolderScreen.Domain_layer.repostiory.FolderRepository
 import com.example.musicplayer.FolderScreen.Ui_Screen.FolderScreen.FolderScreenVM
+import com.example.musicplayer.PlayerScreen.PlayerScreenVm
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.context.startKoin
@@ -34,7 +35,8 @@ val appModule: Module = module {
         }
     }
 
-    viewModel { FolderScreenVM(get()) }
+    viewModel { FolderScreenVM(get() ,  androidContext() )}
+    viewModel { PlayerScreenVm(get(), androidContext()) }
 
     single {
         FoldersDatabase.getIntance(androidContext())
