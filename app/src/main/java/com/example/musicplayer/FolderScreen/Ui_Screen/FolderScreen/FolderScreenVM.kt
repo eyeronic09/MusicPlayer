@@ -8,7 +8,6 @@ import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.media3.exoplayer.ExoPlayer
 import com.example.musicplayer.FolderScreen.Domain_layer.model.Folder
 import com.example.musicplayer.FolderScreen.Domain_layer.repostiory.FolderRepository
 import kotlinx.coroutines.Dispatchers

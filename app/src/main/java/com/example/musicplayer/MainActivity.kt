@@ -51,7 +51,12 @@ class MainActivity : ComponentActivity() {
                         )
                     ) { backStackEntry ->
                         val uri = backStackEntry.arguments?.getString("uri") ?: ""
-                        ListScreen(uri = uri)
+                        ListScreen(
+                            uri = uri,
+                            onNavigateToPlayer = { audioUri ->
+                                navController.navigate(Screen.SpecificAudioPlayer.createRoute(audioUri))
+                            }
+                        )
                     }
                     composable(
                         route = Screen.PlayerScreen.route,
@@ -66,8 +71,25 @@ class MainActivity : ComponentActivity() {
                             navController = navController,
                             folderId = folderId ,
                             exoPlayer = exoPlayer,
-                            viewModel = koinViewModel())
+                            viewModel = koinViewModel()
+                        )
 
+                    }
+                    composable(
+                        route = Screen.SpecificAudioPlayer.route,
+                        arguments = listOf(
+                            navArgument("audioUri") {
+                                type = NavType.StringType
+                            }
+                        )
+                    ){ backStackEntry ->
+                        val audioUri = backStackEntry.arguments?.getString("audioUri") ?: ""
+                        PlayerScreen(
+                            navController = navController,
+                            audioUri = audioUri,
+                            exoPlayer = exoPlayer,
+                            viewModel = koinViewModel()
+                        )
                     }
                 }
             }
