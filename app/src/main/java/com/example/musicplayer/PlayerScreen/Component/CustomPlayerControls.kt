@@ -18,6 +18,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.media3.exoplayer.ExoPlayer
+import kotlinx.coroutines.delay
 
 
 @Composable
@@ -35,9 +37,20 @@ fun CustomPlayerControls(
     modifier: Modifier = Modifier,
     exoPlayer: ExoPlayer
 ) {
+
     var currentPosition by remember { mutableStateOf(0f) }
     var duration by remember { mutableStateOf(0f) }
     var isPlaying by remember { mutableStateOf(false) }
+
+    LaunchedEffect(key1 = exoPlayer) {
+        while (true) {
+            currentPosition = exoPlayer.currentPosition.toFloat()
+            duration = exoPlayer.duration.toFloat()
+            isPlaying = exoPlayer.isPlaying
+            delay(1000)
+        }
+
+    }
 
 
     Column(
