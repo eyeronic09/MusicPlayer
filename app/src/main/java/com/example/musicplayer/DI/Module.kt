@@ -36,7 +36,7 @@ val appModule: Module = module {
     }
 
     viewModel { FolderScreenVM(get() ,  androidContext() )}
-    viewModel { PlayerScreenVm(get(), androidContext()) }
+    viewModel { PlayerScreenVm(get() , Application() ) }
 
     single {
         FoldersDatabase.getIntance(androidContext())

@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
@@ -16,7 +17,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavHostController
-import com.example.musicplayer.PlayerScreen.Component.CustomPlayerControls
+import com.example.musicplayer.PlayerScreen.Component.exoplayerCustomPlayer
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(UnstableApi::class)
@@ -42,29 +43,27 @@ fun PlayerScreen(
             viewModel.onEvent(PlayerScreenUiEvent.UserSpecificAudio(uri.toUri()))
         }
     }
-
-    
-    LaunchedEffect(uiState.value) {
-        Log.d("PlayerScreen", "State changed - playSpecificAudio: ${uiState.value.playSpecificAudio}, playSpecificAudioUri: ${uiState.value.playSpecificAudioUri}")
-        when {
-            uiState.value.selectedFolderToPlay.isNotEmpty() -> {
-                Log.d("PlayerScreen", "Playing ${uiState.value.selectedFolderToPlay.size} files")
-                val mediaItems = uiState.value.selectedFolderToPlay.map { uri ->
-                    MediaItem.fromUri(uri)
-                }
+    LaunchedEffect(uiState.value.playbackSource) {
+        when(val source = uiState.value.playbackSource){
+            is PlaybackSource.Folder -> {
+                val mediaItems = source.files.map { MediaItem.fromUri(it) }
                 exoPlayer.setMediaItems(mediaItems)
                 exoPlayer.prepare()
                 exoPlayer.playWhenReady = true
-
             }
-            uiState.value.selectedFolderToPlayUri == null && uiState.value.playSpecificAudioUri != null && uiState.value.playSpecificAudio -> {
-                Log.d("PlayerScreen", "Playing specific audio")
-                val mediaItem = MediaItem.fromUri(uiState.value.playSpecificAudioUri!!)
+            is PlaybackSource.SingleAudio -> {
+                val mediaItem = MediaItem.fromUri(source.uri)
                 exoPlayer.setMediaItem(mediaItem)
                 exoPlayer.prepare()
                 exoPlayer.playWhenReady = true
             }
+            is PlaybackSource.None -> {
+                exoPlayer.stop()
+            }
+            null -> Unit
         }
+
+
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -84,7 +83,7 @@ fun PlayerScreen(
         )
         
         // Custom controls using Compose
-        CustomPlayerControls(
+        exoplayerCustomPlayer(
             modifier = Modifier.fillMaxWidth(),
             exoPlayer = exoPlayer
         )

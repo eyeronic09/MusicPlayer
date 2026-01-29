@@ -18,6 +18,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,85 +28,73 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import kotlinx.coroutines.delay
 
-
 @Composable
-fun CustomPlayerControls(
+fun exoplayerCustomPlayerState(
     modifier: Modifier = Modifier,
-    exoPlayer: ExoPlayer
-) {
-
-    var currentPosition by remember { mutableStateOf(0f) }
-    var duration by remember { mutableStateOf(0f) }
-    var isPlaying by remember { mutableStateOf(false) }
-
-    LaunchedEffect(key1 = exoPlayer) {
-        while (true) {
-            currentPosition = exoPlayer.currentPosition.toFloat()
-            duration = exoPlayer.duration.toFloat()
-            isPlaying = exoPlayer.isPlaying
-            delay(1000)
-        }
-
-    }
-
-
+    currentPosition : Float,
+    duration : Long,
+    isPlaying : Boolean,
+    onPlayPause : () -> Unit,
+    onNext : () -> Unit,
+    onPrevious : () -> Unit,
+    onSeek : (Float) -> Unit
+){
     Column(
         modifier = modifier
+            .fillMaxWidth()
             .background(Color.Black.copy(alpha = 0.6f))
-            .padding(16.dp)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Progress slider
         Slider(
             value = if (duration > 0) currentPosition / duration else 0f,
-            onValueChange = { value ->
-                if (duration > 0) {
-                    exoPlayer.seekTo((value * duration).toLong())
-                }
-            },
+            onValueChange = { onSeek(it) },
             modifier = Modifier.fillMaxWidth(),
             colors = SliderDefaults.colors(
                 thumbColor = Color(0xFFFF4081),
                 activeTrackColor = Color(0xFFFF4081),
-                inactiveTrackColor = Color.White.copy(alpha = 0.3f)
+                inactiveTrackColor = Color.White.copy(alpha = 0.3f),
+                activeTickColor = Color.Transparent,
+                inactiveTickColor = Color.Transparent
             )
         )
-
+        
         // Control buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Previous button
             IconButton(
-                onClick = { exoPlayer.seekToPrevious() },
+                onClick = onPrevious,
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(Color.Gray.copy(alpha = 0.3f))
+                    .background(Color.White.copy(alpha = 0.2f))
             ) {
                 Icon(
                     imageVector = Icons.Default.SkipPrevious,
-                    contentDescription = "Previous",
+                    contentDescription = "Previous track",
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
                 )
             }
-
+            
+            // Play/Pause button
             IconButton(
-                onClick = {
-                    if (isPlaying) {
-                        exoPlayer.pause()
-                    } else {
-                        exoPlayer.play()
-                    }
-                },
+                onClick = onPlayPause,
                 modifier = Modifier
                     .size(64.dp)
                     .clip(CircleShape)
-                    .background(Color.Gray.copy(alpha = 0.3f))
+                    .background(Color.White.copy(alpha = 0.2f))
             ) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
@@ -114,21 +103,82 @@ fun CustomPlayerControls(
                     modifier = Modifier.size(32.dp)
                 )
             }
-
+            
+            // Next button
             IconButton(
-                onClick = { exoPlayer.seekToNext() },
+                onClick = onNext,
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(Color.Gray.copy(alpha = 0.3f))
+                    .background(Color.White.copy(alpha = 0.2f))
             ) {
                 Icon(
                     imageVector = Icons.Default.SkipNext,
-                    contentDescription = "Next",
+                    contentDescription = "Next track",
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
                 )
             }
         }
     }
+}
+@Composable
+fun exoplayerCustomPlayer(
+    modifier: Modifier = Modifier,
+    exoPlayer: ExoPlayer
+){
+    var currentPosition by remember { mutableStateOf(0f) }
+    var duration by remember { mutableStateOf<Long>(0) }
+    var isPlaying by remember { mutableStateOf(false) }
+
+    DisposableEffect(exoPlayer) {
+        val listener = object : Player.Listener {
+            override fun onIsPlayingChanged(Playing: Boolean) {
+                isPlaying = Playing
+            }
+
+            override fun onPlaybackStateChanged(p: Int) {
+                duration = exoPlayer.duration.coerceAtLeast(0L)
+            }
+        }
+
+        exoPlayer.addListener(listener)
+
+        onDispose {
+            exoPlayer.removeListener(listener)
+        }
+    }
+
+    // Update current position periodically
+    LaunchedEffect(isPlaying) {
+        while (isPlaying) {
+            currentPosition = exoPlayer.currentPosition.toFloat()
+            delay(1000) // Update every second
+        }
+    }
+
+    // Update position when not playing
+    LaunchedEffect(currentPosition) {
+        if (!isPlaying) {
+            currentPosition = exoPlayer.currentPosition.toFloat()
+        }
+    }
+
+    exoplayerCustomPlayerState(
+        modifier = modifier,
+        currentPosition = currentPosition,
+        duration = duration,
+        isPlaying = isPlaying,
+        onPlayPause = {
+            if(isPlaying){
+                exoPlayer.pause()
+            }else{
+                exoPlayer.play()
+            }
+        },
+        onNext = { exoPlayer.seekToNext() },
+        onPrevious = { exoPlayer.previousMediaItemIndex },
+        onSeek = {exoPlayer.seekTo((it * duration).toLong())}
+    )
+
 }
