@@ -1,6 +1,7 @@
 package com.example.musicplayer.Core_Screen
 
 import android.net.Uri
+import android.util.Log
 
 sealed class Screen(val route: String) {
     object Folder_Screen : Screen("Folder")
@@ -15,7 +16,9 @@ sealed class Screen(val route: String) {
     }
     object SpecificAudioPlayer : Screen("specific_audio/{audioUri}") {
         fun createRoute(audioUri: String): String {
+            Log.d("SpecificAudioPlayer", "SpecificAudioPlayer: ${Uri.encode(audioUri)}")
             return "specific_audio/${Uri.encode(audioUri)}"
         }
+
     }
 }

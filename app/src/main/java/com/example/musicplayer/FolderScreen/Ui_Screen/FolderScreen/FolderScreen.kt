@@ -1,6 +1,7 @@
 package com.example.musicplayer.FolderScreen.Ui_Screen.FolderScreen
 
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -36,10 +37,16 @@ fun FolderScreen(
 ) {
     val state by viewModel.screenUiState.collectAsStateWithLifecycle()
 
+    val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
         uri?.let {
+            // Take persistent permission so we can access the folder later
+            val contentResolver = context.contentResolver
+            val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            contentResolver.takePersistableUriPermission(uri, takeFlags)
+            
             viewModel.onEvent(FolderScreenUiEvent.AddFolder(it))
         }
     }

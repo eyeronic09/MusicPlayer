@@ -2,9 +2,11 @@ package com.example.musicplayer.PlayerScreen
 
 import android.app.Application
 import android.net.Uri
+import android.util.Log
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.musicplayer.FolderScreen.Domain_layer.repostiory.FolderRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,8 +45,8 @@ sealed interface PlayerScreenUiEvent{
 
 class PlayerScreenVm(
     private val repository: FolderRepository,
-    application: Application
-) : AndroidViewModel(application) {
+    private val context: android.content.Context
+) : ViewModel() {
 
 
     private val _uiState = MutableStateFlow(PlayerScreenUiState())
@@ -71,6 +73,8 @@ class PlayerScreenVm(
                val folder = repository.getSelectedFolder(folderId.toInt()) ?: error ("Folder not found")
                val folderUri = folder.folderUri.toUri()
                val files = scanFolderForAudio(folderUri)
+
+               Log.d("PlayerScreenVm", "loadFolder: ${PlaybackSource.Folder(folderUri, files)}")
                PlaybackSource.Folder(folderUri, files)
 
            }.onSuccess { source ->
@@ -94,13 +98,32 @@ class PlayerScreenVm(
     }
 
     fun scanFolderForAudio(folderUri: Uri) : List<Uri> {
+        Log.d("PlayerScreenVm", "=== Starting scanFolderForAudio ===")
+        Log.d("PlayerScreenVm", "Input folderUri: $folderUri")
+        
         return try {
-            val folderDoc = DocumentFile.fromTreeUri(getApplication(), folderUri)
-            folderDoc?.listFiles()
-                ?.filter { it.isFile }
+            val folderDoc = DocumentFile.fromTreeUri(context, folderUri)
+            Log.d("PlayerScreenVm", "Folder document: $folderDoc")
+            Log.d("PlayerScreenVm", "Folder exists: ${folderDoc?.exists()}")
+            Log.d("PlayerScreenVm", "Folder can read: ${folderDoc?.canRead()}")
+            
+            val allFiles = folderDoc?.listFiles()
+            Log.d("PlayerScreenVm", "Total files found: ${allFiles?.size ?: 0}")
+            
+            allFiles?.forEach { file ->
+                Log.d("PlayerScreenVm", "File: ${file.name}, isFile: ${file.isFile}, type: ${file.type}")
+            }
+            
+            val result = allFiles?.filter { it.isFile }
                 ?.map { it.uri }
                 ?: emptyList()
+                
+            Log.d("PlayerScreenVm", "Final result: ${result.size} files")
+            Log.d("PlayerScreenVm", "=== scanFolderForAudio completed ===")
+            result
+
         } catch (e: Exception) {
+            Log.e("PlayerScreenVm", "Error scanning folder for audio", e)
             emptyList()
         }
     }
@@ -112,7 +135,9 @@ class PlayerScreenVm(
                 error = null
             )
         }
+
     }
+
 
     private fun clearPlayBack() {
         _uiState.update {
