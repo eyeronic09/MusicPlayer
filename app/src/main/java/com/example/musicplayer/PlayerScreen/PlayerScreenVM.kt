@@ -1,11 +1,9 @@
 package com.example.musicplayer.PlayerScreen
 
-import android.app.Application
 import android.net.Uri
 import android.util.Log
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.musicplayer.FolderScreen.Domain_layer.repostiory.FolderRepository

@@ -76,6 +76,9 @@ dependencies {
         implementation("androidx.media3:media3-ui:$media3_version")
         implementation("androidx.media3:media3-extractor:$media3_version")
 
+
+        implementation("io.coil-kt:coil-compose:2.5.0")
+
         // ======================================================
 
         testImplementation(libs.junit)

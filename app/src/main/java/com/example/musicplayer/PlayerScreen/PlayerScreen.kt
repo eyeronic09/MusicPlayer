@@ -1,24 +1,34 @@
+@file:kotlin.OptIn(ExperimentalMaterial3Api::class)
+
 package com.example.musicplayer.PlayerScreen
 
-import android.util.Log
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.modifier.modifierLocalConsumer
-import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.graphics.Color
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.PlayerView
 import androidx.navigation.NavHostController
 import com.example.musicplayer.PlayerScreen.Component.exoplayerCustomPlayer
 import org.koin.androidx.compose.koinViewModel
+
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -37,7 +47,7 @@ fun PlayerScreen(
             viewModel.onEvent(PlayerScreenUiEvent.LoadFolder(it))
         }
     }
-    
+
     LaunchedEffect(audioUri) {
         audioUri?.let { uri ->
             viewModel.onEvent(PlayerScreenUiEvent.UserSpecificAudio(uri.toUri()))
@@ -46,7 +56,9 @@ fun PlayerScreen(
     LaunchedEffect(uiState.value.playbackSource) {
         when(val source = uiState.value.playbackSource){
             is PlaybackSource.Folder -> {
-                val mediaItems = source.files.map { MediaItem.fromUri(it) }
+                val mediaItems = source.files.map {
+                    MediaItem.fromUri(it)
+                }
                 exoPlayer.setMediaItems(mediaItems)
                 exoPlayer.prepare()
                 exoPlayer.playWhenReady = true
@@ -66,26 +78,41 @@ fun PlayerScreen(
 
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Main player view
-        AndroidView(
-            modifier = Modifier.weight(1f),
-            factory = { context ->
-                PlayerView(context).apply {
-                    player = exoPlayer
-                    controllerAutoShow = false
-                    useController = false
-                }
-            },
-            update = { playerView ->
-                playerView.player = exoPlayer
-            }
-        )
-        
-        // Custom controls using Compose
-        exoplayerCustomPlayer(
-            modifier = Modifier.fillMaxWidth(),
-            exoPlayer = exoPlayer
-        )
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { 
+                    Text(
+                        text = "Now Playing",
+                        color = Color.White
+                    )
+                },
+                navigationIcon = {
+                    IconButton(
+                        onClick = { navController.navigateUp() }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Black
+                )
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            exoplayerCustomPlayer(
+                modifier = Modifier.fillMaxSize(),
+                exoPlayer = exoPlayer
+            )
+        }
     }
 }
