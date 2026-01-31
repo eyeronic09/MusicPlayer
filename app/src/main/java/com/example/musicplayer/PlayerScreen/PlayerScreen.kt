@@ -2,13 +2,13 @@
 
 package com.example.musicplayer.PlayerScreen
 
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -21,12 +21,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.NavHostController
-import com.example.musicplayer.PlayerScreen.Component.exoplayerCustomPlayer
+import com.example.musicplayer.PlayerScreen.Component.PlayerScreenContent
 import org.koin.androidx.compose.koinViewModel
 
 
@@ -92,7 +93,7 @@ fun PlayerScreen(
                         onClick = { navController.navigateUp() }
                     ) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = Color.White
                         )
@@ -102,6 +103,9 @@ fun PlayerScreen(
                     containerColor = Color.Black
                 )
             )
+        },
+        bottomBar = {
+
         }
     ) { paddingValues ->
         Column(
@@ -109,8 +113,7 @@ fun PlayerScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            exoplayerCustomPlayer(
-                modifier = Modifier.fillMaxSize(),
+            PlayerScreenContent(
                 exoPlayer = exoPlayer
             )
         }
