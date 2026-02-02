@@ -1,5 +1,9 @@
 package com.example.musicplayer.PlayerScreen
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.util.Log
 import androidx.core.net.toUri
@@ -12,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.IOException
 
 
 sealed interface PlaybackSource {
@@ -43,7 +48,7 @@ sealed interface PlayerScreenUiEvent{
 
 class PlayerScreenVm(
     private val repository: FolderRepository,
-    private val context: android.content.Context
+    private val context: Context
 ) : ViewModel() {
 
 
@@ -71,8 +76,6 @@ class PlayerScreenVm(
                val folder = repository.getSelectedFolder(folderId.toInt()) ?: error ("Folder not found")
                val folderUri = folder.folderUri.toUri()
                val files = scanFolderForAudio(folderUri)
-
-               Log.d("PlayerScreenVm", "loadFolder: ${PlaybackSource.Folder(folderUri, files)}")
                PlaybackSource.Folder(folderUri, files)
 
            }.onSuccess { source ->
@@ -96,28 +99,21 @@ class PlayerScreenVm(
     }
 
     fun scanFolderForAudio(folderUri: Uri) : List<Uri> {
-        Log.d("PlayerScreenVm", "=== Starting scanFolderForAudio ===")
-        Log.d("PlayerScreenVm", "Input folderUri: $folderUri")
         
         return try {
             val folderDoc = DocumentFile.fromTreeUri(context, folderUri)
-            Log.d("PlayerScreenVm", "Folder document: $folderDoc")
-            Log.d("PlayerScreenVm", "Folder exists: ${folderDoc?.exists()}")
-            Log.d("PlayerScreenVm", "Folder can read: ${folderDoc?.canRead()}")
+
             
             val allFiles = folderDoc?.listFiles()
-            Log.d("PlayerScreenVm", "Total files found: ${allFiles?.size ?: 0}")
+
             
             allFiles?.forEach { file ->
-                Log.d("PlayerScreenVm", "File: ${file.name}, isFile: ${file.isFile}, type: ${file.type}")
+                Log.d("PlayerScreenVm", "File: ${file.name}, isFile: ${file.isFile}, type: ${file.type} URI: ${file}")
             }
             
             val result = allFiles?.filter { it.isFile }
                 ?.map { it.uri }
                 ?: emptyList()
-                
-            Log.d("PlayerScreenVm", "Final result: ${result.size} files")
-            Log.d("PlayerScreenVm", "=== scanFolderForAudio completed ===")
             result
 
         } catch (e: Exception) {
@@ -125,7 +121,6 @@ class PlayerScreenVm(
             emptyList()
         }
     }
-
     private fun playSingleAudio(uri: Uri) {
         _uiState.update {
             it.copy(
@@ -137,6 +132,7 @@ class PlayerScreenVm(
     }
 
 
+
     private fun clearPlayBack() {
         _uiState.update {
             it.copy(
@@ -144,5 +140,20 @@ class PlayerScreenVm(
                 error = null
             )
         }
+    }
+}
+
+fun getEmbeddedArtwork(context: Context, uri: Uri): Bitmap? {
+    val retriever = MediaMetadataRetriever()
+
+    return try {
+        retriever.setDataSource(context, uri)
+        val artBytes = retriever.embeddedPicture ?: return null
+        BitmapFactory.decodeByteArray(artBytes, 0, artBytes.size)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    } finally {
+        retriever.release()
     }
 }

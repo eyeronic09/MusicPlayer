@@ -14,12 +14,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-
+import com.example.musicplayer.Utilts.DurationFormater
+import com.example.musicplayer.Utilts.formatTimeWithHours
 
 
 @Composable
@@ -50,6 +52,18 @@ fun PlayerControls(
                 inactiveTickColor = Color.DarkGray
             )
         )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(text = formatTimeWithHours(currentPosition))
+            Text(text = DurationFormater(duration))
+        }
+
+
 
         Row(
             modifier = Modifier
@@ -92,8 +106,8 @@ fun PlayerControls(
 
         }
     }
-}
 
+}
 @Preview(showBackground = true)
 @Composable
 fun PlayerControlsPreview() {

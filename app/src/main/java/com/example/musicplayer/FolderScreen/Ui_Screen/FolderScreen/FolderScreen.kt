@@ -23,9 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.musicplayer.FolderScreen.Ui_Screen.FolderScreen.component.HorizontalFolderBar
-import com.example.musicplayer.FolderScreen.Ui_Screen.FolderScreen.component.ListScreenContent
-import com.example.musicplayer.PlayerScreen.PlayerScreenUiEvent
-import com.example.musicplayer.PlayerScreen.PlayerScreenVm
+import com.example.musicplayer.FolderScreen.Ui_Screen.FolderScreen.component.ListScreen
 import org.koin.androidx.compose.koinViewModel
 
 
@@ -97,8 +95,8 @@ fun ListScreen(
 ) {
     val files = folderScreenVM.listFile(context, uri.toUri())
 
-    ListScreenContent(
-        uri = uri, 
+    ListScreen(
+        uri = uri.toUri(),
         files = files,
         onItemClick = { fileUri ->
             Log.d("FolderScreen", "File clicked: $fileUri")

@@ -1,5 +1,6 @@
 package com.example.musicplayer.PlayerScreen.Component
 
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -54,6 +56,11 @@ fun PlayerScreenContent(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
+            val contecxt = LocalContext.current
+
+            var artWork by remember { mutableStateOf<Bitmap?>(null) }
+
+
             var currentPosition by remember { mutableFloatStateOf(0f) }
             var duration by remember { mutableLongStateOf(0) }
             var isPlaying by remember { mutableStateOf(false) }
@@ -76,6 +83,8 @@ fun PlayerScreenContent(
                         artAlbum = mediaMetadata.artworkUri
                         trackTitle = mediaMetadata.title?.toString() ?: "Unknown Title"
                         trackArtists = mediaMetadata.artist?.toString() ?: "Unknown Artist"
+
+
                     }
 
                     override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
@@ -112,6 +121,7 @@ fun PlayerScreenContent(
                 }
             }
 
+
             PlayerArtworkDisplay(
                 modifier = Modifier.weight(1f),
                 artworkUri = artAlbum
@@ -135,7 +145,7 @@ fun PlayerScreenContent(
                     },
                     onNext = { exoPlayer.seekToNext() },
                     onPrevious = { exoPlayer.seekToPrevious() },
-                    onSeek = { fraction -> 
+                    onSeek = { fraction ->
                         exoPlayer.seekTo((fraction * duration).toLong())
                         currentPosition = (fraction * duration)
                     }

@@ -75,8 +75,6 @@ fun PlayerScreen(
                 exoPlayer.playWhenReady = true
             }
             is PlaybackSource.None -> {
-                // If we're just navigating to the Player tab, don't stop existing playback.
-                // Only stop if the player is explicitly empty.
                 if (exoPlayer.currentMediaItem == null) {
                     exoPlayer.stop()
                 }
