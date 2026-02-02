@@ -2,7 +2,6 @@
 
 package com.example.musicplayer.PlayerScreen
 
-import android.util.Log
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,7 +20,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
@@ -40,43 +38,50 @@ fun PlayerScreen(
     folderId: Long? = null,
     audioUri: String? = null
 ) {
-
     val uiState = viewModel.uiState.collectAsState()
 
+    // Trigger loading only if arguments are provided
     LaunchedEffect(folderId) {
-        folderId?.let {
-            viewModel.onEvent(PlayerScreenUiEvent.LoadFolder(it))
+        if (folderId != null && folderId != 0L) {
+            viewModel.onEvent(PlayerScreenUiEvent.LoadFolder(folderId))
         }
     }
 
     LaunchedEffect(audioUri) {
-        audioUri?.let { uri ->
-            viewModel.onEvent(PlayerScreenUiEvent.UserSpecificAudio(uri.toUri()))
+        if (audioUri != null && audioUri.isNotEmpty()) {
+            viewModel.onEvent(PlayerScreenUiEvent.UserSpecificAudio(audioUri.toUri()))
         }
     }
+
+
     LaunchedEffect(uiState.value.playbackSource) {
         when(val source = uiState.value.playbackSource){
             is PlaybackSource.Folder -> {
                 val mediaItems = source.files.map {
                     MediaItem.fromUri(it)
                 }
+                exoPlayer.stop()
+                exoPlayer.clearMediaItems()
                 exoPlayer.setMediaItems(mediaItems)
                 exoPlayer.prepare()
                 exoPlayer.playWhenReady = true
             }
             is PlaybackSource.SingleAudio -> {
                 val mediaItem = MediaItem.fromUri(source.uri)
+                exoPlayer.stop()
+                exoPlayer.clearMediaItems()
                 exoPlayer.setMediaItem(mediaItem)
                 exoPlayer.prepare()
                 exoPlayer.playWhenReady = true
             }
             is PlaybackSource.None -> {
-                exoPlayer.stop()
+                // If we're just navigating to the Player tab, don't stop existing playback.
+                // Only stop if the player is explicitly empty.
+                if (exoPlayer.currentMediaItem == null) {
+                    exoPlayer.stop()
+                }
             }
-            null -> Unit
         }
-
-
     }
 
     Scaffold(
@@ -89,23 +94,23 @@ fun PlayerScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(
-                        onClick = { navController.navigateUp() }
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White
-                        )
+                    // Only show back button if we're not on a main tab
+                    if (folderId != null || audioUri != null) {
+                        IconButton(
+                            onClick = { navController.navigateUp() }
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Black
                 )
             )
-        },
-        bottomBar = {
-
         }
     ) { paddingValues ->
         Column(
