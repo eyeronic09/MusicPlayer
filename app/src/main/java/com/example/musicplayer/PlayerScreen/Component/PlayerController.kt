@@ -20,7 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.musicplayer.Utilts.DurationFormater
+import com.example.musicplayer.Utilts.formatDuration
 import com.example.musicplayer.Utilts.formatTimeWithHours
 
 
@@ -60,7 +60,7 @@ fun PlayerControls(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(text = formatTimeWithHours(currentPosition))
-            Text(text = DurationFormater(duration))
+            Text(text = formatDuration(duration))
         }
 
 

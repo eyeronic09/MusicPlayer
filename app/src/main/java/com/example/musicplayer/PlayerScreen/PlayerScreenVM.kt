@@ -1,9 +1,6 @@
 package com.example.musicplayer.PlayerScreen
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.util.Log
 import androidx.core.net.toUri
@@ -16,11 +13,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.IOException
 
 
 sealed interface PlaybackSource {
 
+    data class DefaultPlaybackSource(
+        val uri: Uri ? = null
+    ) : PlaybackSource
     data class Folder(
         val folderUri: Uri,
         val files: List<Uri>
@@ -36,6 +35,7 @@ sealed interface PlaybackSource {
 
 data class PlayerScreenUiState(
     val playbackSource: PlaybackSource = PlaybackSource.None,
+    val uri : Uri? = null,
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -43,6 +43,7 @@ data class PlayerScreenUiState(
 sealed interface PlayerScreenUiEvent{
     data class LoadFolder(val folderId: Long) : PlayerScreenUiEvent
     data class UserSpecificAudio(val uri: Uri) : PlayerScreenUiEvent
+    data class UserSelectedUri (val uri: Uri) : PlayerScreenUiEvent
     object ClearPlayBack : PlayerScreenUiEvent
 }
 
@@ -61,6 +62,9 @@ class PlayerScreenVm(
                 loadFolder(event.folderId)
             }
             is PlayerScreenUiEvent.UserSpecificAudio -> {
+                playSingleAudio(event.uri)
+            }
+            is PlayerScreenUiEvent.UserSelectedUri -> {
                 playSingleAudio(event.uri)
             }
             is PlayerScreenUiEvent.ClearPlayBack -> {
@@ -130,9 +134,6 @@ class PlayerScreenVm(
         }
 
     }
-
-
-
     private fun clearPlayBack() {
         _uiState.update {
             it.copy(
@@ -141,19 +142,6 @@ class PlayerScreenVm(
             )
         }
     }
-}
 
-fun getEmbeddedArtwork(context: Context, uri: Uri): Bitmap? {
-    val retriever = MediaMetadataRetriever()
 
-    return try {
-        retriever.setDataSource(context, uri)
-        val artBytes = retriever.embeddedPicture ?: return null
-        BitmapFactory.decodeByteArray(artBytes, 0, artBytes.size)
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
-    } finally {
-        retriever.release()
-    }
 }

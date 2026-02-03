@@ -17,10 +17,11 @@ sealed class Screen(val route: String) {
             return "player/$folderId"
         }
     }
-    
+
     object SpecificAudioPlayer : Screen("specific_audio/{audioUri}") {
         fun createRoute(audioUri: String): String {
             return "specific_audio/${Uri.encode(audioUri)}"
         }
     }
+
 }

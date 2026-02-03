@@ -1,7 +1,9 @@
 package com.example.musicplayer.Utilts
 
 import android.annotation.SuppressLint
-import kotlin.time.Duration
+import android.content.Context
+import android.net.Uri
+import android.webkit.MimeTypeMap
 
 @SuppressLint("DefaultLocale")
 fun formatTimeWithHours(timeMs: Float): String {
@@ -18,7 +20,7 @@ fun formatTimeWithHours(timeMs: Float): String {
 }
 
 @SuppressLint("DefaultLocale")
-fun DurationFormater(timeMs: Long): String {
+fun formatDuration(timeMs: Long): String {
     val totalSeconds = timeMs / 1000
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
@@ -29,4 +31,11 @@ fun DurationFormater(timeMs: Long): String {
     } else {
         String.format("%02d:%02d", minutes, seconds)
     }
+}
+
+fun isValidAudioExtension(context: Context, uri: Uri): Boolean {
+    val validExtensions = listOf("aac", "flac", "mp3", "ogg", "opus", "wav")
+    val fileType: String? = MimeTypeMap.getSingleton().getExtensionFromMimeType(context.contentResolver.getType(uri))
+    val fileExtension = fileType?.lowercase() ?: ""
+    return validExtensions.contains(fileExtension)
 }

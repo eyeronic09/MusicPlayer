@@ -2,8 +2,9 @@
 
 package com.example.musicplayer.PlayerScreen
 
+import android.util.Log
 import androidx.annotation.OptIn
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -20,12 +21,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 import androidx.navigation.NavHostController
 import com.example.musicplayer.PlayerScreen.Component.PlayerScreenContent
+import com.example.musicplayer.Utilts.isValidAudioExtension
 import org.koin.androidx.compose.koinViewModel
 
 
@@ -36,7 +41,8 @@ fun PlayerScreen(
     viewModel: PlayerScreenVm = koinViewModel(),
     exoPlayer: ExoPlayer,
     folderId: Long? = null,
-    audioUri: String? = null
+    audioUri: String? = null,
+    UserSpecificUri : String? = null
 ) {
     val uiState = viewModel.uiState.collectAsState()
 
@@ -53,6 +59,11 @@ fun PlayerScreen(
         }
     }
 
+    LaunchedEffect(key1 = UserSpecificUri) {
+        if (UserSpecificUri != null && UserSpecificUri.isNotEmpty()) {
+            viewModel.onEvent(PlayerScreenUiEvent.UserSelectedUri(UserSpecificUri.toUri()))
+        }
+    }
 
     LaunchedEffect(uiState.value.playbackSource) {
         when(val source = uiState.value.playbackSource){
@@ -68,6 +79,7 @@ fun PlayerScreen(
             }
             is PlaybackSource.SingleAudio -> {
                 val mediaItem = MediaItem.fromUri(source.uri)
+                Log.d("Uri_Debugger" , source.uri.lastPathSegment.toString())
                 exoPlayer.stop()
                 exoPlayer.clearMediaItems()
                 exoPlayer.setMediaItem(mediaItem)
@@ -78,6 +90,13 @@ fun PlayerScreen(
                 if (exoPlayer.currentMediaItem == null) {
                     exoPlayer.stop()
                 }
+            }
+            is PlaybackSource.DefaultPlaybackSource  -> {
+                val mediaItem = MediaItem.fromUri(source.uri!!)
+                exoPlayer.stop()
+                exoPlayer.clearMediaItems()
+                exoPlayer.setMediaItem(mediaItem)
+                exoPlayer.prepare()
             }
         }
     }
@@ -111,14 +130,33 @@ fun PlayerScreen(
             )
         }
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            PlayerScreenContent(
-                exoPlayer = exoPlayer
-            )
+            val localContext = LocalContext.current
+
+            // Check if current media is valid audio format
+            val currentUri = exoPlayer.currentMediaItem?.localConfiguration?.uri
+            val isValidAudio = currentUri?.let { isValidAudioExtension(localContext, it) } ?: false
+
+            // Show PlayerScreenContent for audio files, AndroidView for non-audio files
+            if (currentUri == null || isValidAudio) {
+                PlayerScreenContent(exoPlayer = exoPlayer)
+            } else {
+                AndroidView(
+                    modifier = Modifier.fillMaxSize(),
+                    factory = { context ->
+                        PlayerView(context).apply {
+                            this.player = exoPlayer
+                        }
+                    },
+                    update = { playerView ->
+                        playerView.player = exoPlayer
+                    }
+                )
+            }
         }
     }
 }
