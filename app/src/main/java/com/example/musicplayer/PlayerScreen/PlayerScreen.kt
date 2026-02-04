@@ -131,15 +131,8 @@ fun PlayerScreen(
                 .padding(paddingValues)
         ) {
             val localContext = LocalContext.current
-
-            // Check if current media is valid audio format
             val currentUri = exoPlayer.currentMediaItem?.localConfiguration?.uri
             val isValidAudio = currentUri?.let { isValidAudioExtension(localContext, it) } ?: false
-            
-            Log.d("PlayerScreenDebug", "Current URI: $currentUri")
-            Log.d("PlayerScreenDebug", "Is valid audio: $isValidAudio")
-            Log.d("PlayerScreenDebug", "Condition result: ${currentUri == null || isValidAudio}")
-            
             if ( isValidAudio) {
                 Log.d("PlayerScreenDebug", "Showing PlayerScreenContent")
                 PlayerScreenContent(exoPlayer = exoPlayer)

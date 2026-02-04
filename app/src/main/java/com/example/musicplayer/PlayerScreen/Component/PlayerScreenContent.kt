@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.core.net.toUri
+import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -69,6 +70,14 @@ fun PlayerScreenContent(
                 trackArtists = mediaMetadata.artist?.toString() ?: "Unknown Artist"
             }
 
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                // Update URI when track changes
+                currentUri = (mediaItem?.localConfiguration?.uri
+                    ?: mediaItem?.mediaMetadata?.extras?.getString("uri")
+                    ?: mediaItem?.mediaId?.toUri()) as Uri?
+                hasMedia = mediaItem != null
+            }
+
         }
 
         exoPlayer.addListener(listener)
@@ -88,28 +97,19 @@ fun PlayerScreenContent(
         android.util.Log.d("ArtworkDebug", "LocalConfiguration URI: ${exoPlayer.currentMediaItem?.localConfiguration?.uri}")
         android.util.Log.d("ArtworkDebug", "MediaId: ${exoPlayer.currentMediaItem?.mediaId}")
 
-        embeddedArtworkBitmap = if (currentUri != null) {
-            // This will be handled by LaunchedEffect since getEmbeddedArtwork is now a suspend function
-            null
-        } else {
-            null
-        }
-
 
         onDispose {
             exoPlayer.removeListener(listener)
         }
     }
 
-    // Load artwork when URI changes
+
     LaunchedEffect(currentUri) {
         android.util.Log.d("ArtworkDebug", "LaunchedEffect triggered with URI: $currentUri")
         if (currentUri != null) {
             embeddedArtworkBitmap = getEmbeddedArtwork(context, uri = currentUri!!)
-            android.util.Log.d("ArtworkDebug", "Artwork loading completed: ${embeddedArtworkBitmap != null}")
         } else {
             embeddedArtworkBitmap = null
-            android.util.Log.d("ArtworkDebug", "URI is null, setting artwork to null")
         }
     }
 

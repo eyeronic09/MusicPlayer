@@ -54,12 +54,6 @@ fun isValidAudioExtension(context: Context, uri: Uri): Boolean {
         val fileType: String? = MimeTypeMap.getSingleton().getExtensionFromMimeType(context.contentResolver.getType(uri))
         fileType?.lowercase() ?: ""
     }
-    
-    android.util.Log.d("ValidationDebug", "URI: $uri")
-    android.util.Log.d("ValidationDebug", "Last segment: $lastSegment")
-    android.util.Log.d("ValidationDebug", "Extracted extension: $fileExtension")
-    android.util.Log.d("ValidationDebug", "Is valid: ${validExtensions.contains(fileExtension)}")
-    
     return validExtensions.contains(fileExtension)
 }
 
