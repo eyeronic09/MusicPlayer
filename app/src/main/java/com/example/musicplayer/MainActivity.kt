@@ -69,10 +69,7 @@ fun MainScreen(exoPlayer: ExoPlayer) {
 
     Scaffold(
         bottomBar = {
-            NavigationBar(
-                containerColor = Color.Black,
-                contentColor = Color.White
-            ) {
+            NavigationBar() {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination
                 

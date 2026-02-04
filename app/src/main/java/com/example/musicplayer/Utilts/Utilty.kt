@@ -2,8 +2,14 @@ package com.example.musicplayer.Utilts
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.util.Log
 import android.webkit.MimeTypeMap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @SuppressLint("DefaultLocale")
 fun formatTimeWithHours(timeMs: Float): String {
@@ -34,8 +40,52 @@ fun formatDuration(timeMs: Long): String {
 }
 
 fun isValidAudioExtension(context: Context, uri: Uri): Boolean {
-    val validExtensions = listOf("aac", "flac", "mp3", "ogg", "opus", "wav")
-    val fileType: String? = MimeTypeMap.getSingleton().getExtensionFromMimeType(context.contentResolver.getType(uri))
-    val fileExtension = fileType?.lowercase() ?: ""
+    val validExtensions = listOf("aac", "flac", "mp3", "ogg", "opus", "wav", "m4a")
+    
+    // Try to get extension from URI path first
+    val uriPath = uri.path ?: ""
+    val lastSegment = uri.lastPathSegment ?: ""
+    
+    // Extract extension from the filename
+    val fileExtension = if (lastSegment.contains(".")) {
+        lastSegment.substringAfterLast(".").lowercase()
+    } else {
+        // Fallback to MIME type method
+        val fileType: String? = MimeTypeMap.getSingleton().getExtensionFromMimeType(context.contentResolver.getType(uri))
+        fileType?.lowercase() ?: ""
+    }
+    
+    android.util.Log.d("ValidationDebug", "URI: $uri")
+    android.util.Log.d("ValidationDebug", "Last segment: $lastSegment")
+    android.util.Log.d("ValidationDebug", "Extracted extension: $fileExtension")
+    android.util.Log.d("ValidationDebug", "Is valid: ${validExtensions.contains(fileExtension)}")
+    
     return validExtensions.contains(fileExtension)
+}
+
+suspend fun getEmbeddedArtwork(context: Context, uri: Uri): Bitmap? = withContext(Dispatchers.IO) {
+    val retriever = MediaMetadataRetriever()
+
+    try {
+        Log.d("ArtworkDebug", "Attempting to load artwork from URI: $uri")
+        retriever.setDataSource(context, uri)
+
+        val artBytes = retriever.embeddedPicture
+        Log.d("ArtworkDebug", "Artwork bytes: ${artBytes?.size ?: "null"} bytes")
+        
+        if (artBytes != null && artBytes.isNotEmpty()) {
+            val bitmap = BitmapFactory.decodeByteArray(artBytes, 0, artBytes.size)
+            Log.d("ArtworkDebug", "Bitmap decoded: ${bitmap?.width}x${bitmap?.height}")
+            bitmap
+        } else {
+            Log.d("ArtworkDebug", "No embedded artwork found")
+            null
+        }
+
+    } catch (e: Exception) {
+        Log.e("ArtworkDebug", "Error loading artwork", e)
+        null
+    } finally {
+        retriever.release()
+    }
 }

@@ -1,5 +1,8 @@
 package com.example.musicplayer.PlayerScreen.Component
 
+import android.graphics.Bitmap
+import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,13 +25,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.net.toUri
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.example.musicplayer.R
-import com.example.musicplayer.ui.theme.MusicPlayerTheme
+import com.example.musicplayer.Utilts.getEmbeddedArtwork
 import kotlinx.coroutines.delay
 
 
@@ -36,13 +41,17 @@ import kotlinx.coroutines.delay
 fun PlayerScreenContent(
     exoPlayer: ExoPlayer,
 ) {
+    val context = LocalContext.current
     var hasMedia by remember { mutableStateOf(exoPlayer.currentMediaItem != null) }
 
+    var currentUri by remember {mutableStateOf( exoPlayer.currentMediaItem?.localConfiguration?.uri) }
     var currentPosition by remember { mutableFloatStateOf(0f) }
     var duration by remember { mutableLongStateOf(0) }
     var isPlaying by remember { mutableStateOf(false) }
     var trackTitle by remember { mutableStateOf("Unknown Title") }
     var trackArtists by remember { mutableStateOf("Unknown Artist") }
+    var embeddedArtworkBitmap by remember { mutableStateOf<Bitmap?>(null) }
+
 
     DisposableEffect(exoPlayer) {
         val listener = object : Player.Listener {
@@ -59,6 +68,7 @@ fun PlayerScreenContent(
                 trackTitle = mediaMetadata.title?.toString() ?: "Unknown Title"
                 trackArtists = mediaMetadata.artist?.toString() ?: "Unknown Artist"
             }
+
         }
 
         exoPlayer.addListener(listener)
@@ -69,9 +79,37 @@ fun PlayerScreenContent(
         trackTitle = exoPlayer.mediaMetadata.title?.toString() ?: "Unknown Title"
         trackArtists = exoPlayer.mediaMetadata.artist?.toString() ?: "Unknown Artist"
         hasMedia = exoPlayer.currentMediaItem != null
+        // Try multiple ways to get the URI
+        currentUri = (exoPlayer.currentMediaItem?.localConfiguration?.uri
+            ?: exoPlayer.currentMediaItem?.mediaMetadata?.extras?.getString("uri")
+            ?: exoPlayer.currentMediaItem?.mediaId?.toUri()) as Uri?
+        
+        android.util.Log.d("ArtworkDebug", "MediaItem: ${exoPlayer.currentMediaItem}")
+        android.util.Log.d("ArtworkDebug", "LocalConfiguration URI: ${exoPlayer.currentMediaItem?.localConfiguration?.uri}")
+        android.util.Log.d("ArtworkDebug", "MediaId: ${exoPlayer.currentMediaItem?.mediaId}")
+
+        embeddedArtworkBitmap = if (currentUri != null) {
+            // This will be handled by LaunchedEffect since getEmbeddedArtwork is now a suspend function
+            null
+        } else {
+            null
+        }
+
 
         onDispose {
             exoPlayer.removeListener(listener)
+        }
+    }
+
+    // Load artwork when URI changes
+    LaunchedEffect(currentUri) {
+        android.util.Log.d("ArtworkDebug", "LaunchedEffect triggered with URI: $currentUri")
+        if (currentUri != null) {
+            embeddedArtworkBitmap = getEmbeddedArtwork(context, uri = currentUri!!)
+            android.util.Log.d("ArtworkDebug", "Artwork loading completed: ${embeddedArtworkBitmap != null}")
+        } else {
+            embeddedArtworkBitmap = null
+            android.util.Log.d("ArtworkDebug", "URI is null, setting artwork to null")
         }
     }
 
@@ -91,6 +129,7 @@ fun PlayerScreenContent(
     }
 
     PlayerScreenContentStateless(
+        embeddedArtworkBitmap = embeddedArtworkBitmap,
         hasMedia = hasMedia,
         trackTitle = trackTitle,
         trackArtists = trackArtists,
@@ -116,6 +155,7 @@ fun PlayerScreenContent(
 @Composable
 fun PlayerScreenContentStateless(
     hasMedia: Boolean,
+    embeddedArtworkBitmap: Bitmap? = null,
     trackTitle: String,
     trackArtists: String,
     currentPosition: Float,
@@ -157,12 +197,23 @@ fun PlayerScreenContentStateless(
                             modifier = Modifier.fillMaxSize(),
                             onClick = { }
                         ) {
-                            Icon(
-                                modifier = Modifier.aspectRatio(1f),
-                                painter = painterResource(R.drawable.baseline_music_note_24),
-                                contentDescription = "Music Note",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                            if (embeddedArtworkBitmap != null) {
+                                Image(
+                                    bitmap = embeddedArtworkBitmap.asImageBitmap(),
+                                    contentDescription = "Album Art",
+                                    modifier = Modifier.aspectRatio(1f)
+                                )
+
+                            } else {
+                                Icon(
+                                    modifier = Modifier.aspectRatio(1f),
+                                    painter = painterResource(
+                                        R.drawable.baseline_music_note_24
+                                    ),
+                                    contentDescription = "Music Note",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                     TitlePlate(
@@ -181,24 +232,5 @@ fun PlayerScreenContentStateless(
                 }
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PlayerScreenContentPreview() {
-    MusicPlayerTheme(darkTheme = false) {
-        PlayerScreenContentStateless(
-            hasMedia = true,
-            trackTitle = "Sample Track",
-            trackArtists = "Sample Artist",
-            currentPosition = 30000f,
-            duration = 180000L,
-            isPlaying = true,
-            onPlayPause = {},
-            onNext = {},
-            onPrevious = {},
-            onSeek = {}
-        )
     }
 }

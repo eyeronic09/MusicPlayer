@@ -107,11 +107,9 @@ fun PlayerScreen(
                 title = { 
                     Text(
                         text = "Now Playing",
-                        color = Color.White
                     )
                 },
                 navigationIcon = {
-                    // Only show back button if we're not on a main tab
                     if (folderId != null || audioUri != null) {
                         IconButton(
                             onClick = { navController.navigateUp() }
@@ -124,9 +122,6 @@ fun PlayerScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Black
-                )
             )
         }
     ) { paddingValues ->
@@ -140,9 +135,16 @@ fun PlayerScreen(
             // Check if current media is valid audio format
             val currentUri = exoPlayer.currentMediaItem?.localConfiguration?.uri
             val isValidAudio = currentUri?.let { isValidAudioExtension(localContext, it) } ?: false
-            if (currentUri == null || isValidAudio) {
+            
+            Log.d("PlayerScreenDebug", "Current URI: $currentUri")
+            Log.d("PlayerScreenDebug", "Is valid audio: $isValidAudio")
+            Log.d("PlayerScreenDebug", "Condition result: ${currentUri == null || isValidAudio}")
+            
+            if ( isValidAudio) {
+                Log.d("PlayerScreenDebug", "Showing PlayerScreenContent")
                 PlayerScreenContent(exoPlayer = exoPlayer)
             } else {
+                Log.d("PlayerScreenDebug", "Showing AndroidView PlayerView")
                 AndroidView(
                     modifier = Modifier.fillMaxSize(),
                     factory = { context ->
