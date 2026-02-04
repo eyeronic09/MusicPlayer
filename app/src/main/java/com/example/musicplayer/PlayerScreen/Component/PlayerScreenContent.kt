@@ -1,12 +1,15 @@
 package com.example.musicplayer.PlayerScreen.Component
 
-import android.net.Uri
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -19,12 +22,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import com.example.musicplayer.R
 import com.example.musicplayer.ui.theme.MusicPlayerTheme
 import kotlinx.coroutines.delay
 
@@ -123,50 +126,68 @@ fun PlayerScreenContentStateless(
     onPrevious: () -> Unit,
     onSeek: (Float) -> Unit
 ) {
-    if (!hasMedia) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Nothing Playing",
-                style = MaterialTheme.typography.headlineMedium,
-                color = Color.Gray
-            )
-        }
-    } else {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black),
-            verticalArrangement = Arrangement.SpaceBetween,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Column {
-                TitlePlate(
-                    trackName = trackTitle,
-                    trackArtists = trackArtists
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        if (!hasMedia) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Nothing Playing",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                PlayerControls(
-                    currentPosition = currentPosition,
-                    duration = duration,
-                    isPlaying = isPlaying,
-                    onPlayPause = onPlayPause,
-                    onNext = onNext,
-                    onPrevious = onPrevious,
-                    onSeek = onSeek
-                )
+            }
+        } else {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Column {
+                    Box(
+                        modifier = Modifier
+                            .weight(0.5f)
+                            .fillMaxWidth()
+                    ) {
+                        IconButton(
+                            modifier = Modifier.fillMaxSize(),
+                            onClick = { }
+                        ) {
+                            Icon(
+                                modifier = Modifier.aspectRatio(1f),
+                                painter = painterResource(R.drawable.baseline_music_note_24),
+                                contentDescription = "Music Note",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    TitlePlate(
+                        trackName = trackTitle,
+                        trackArtists = trackArtists
+                    )
+                    PlayerControls(
+                        currentPosition = currentPosition,
+                        duration = duration,
+                        isPlaying = isPlaying,
+                        onPlayPause = onPlayPause,
+                        onNext = onNext,
+                        onPrevious = onPrevious,
+                        onSeek = onSeek
+                    )
+                }
             }
         }
     }
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
 fun PlayerScreenContentPreview() {
-    MusicPlayerTheme {
+    MusicPlayerTheme(darkTheme = false) {
         PlayerScreenContentStateless(
             hasMedia = true,
             trackTitle = "Sample Track",
@@ -174,25 +195,6 @@ fun PlayerScreenContentPreview() {
             currentPosition = 30000f,
             duration = 180000L,
             isPlaying = true,
-            onPlayPause = {},
-            onNext = {},
-            onPrevious = {},
-            onSeek = {}
-        )
-    }
-}
-
-@Preview
-@Composable
-fun PlayerScreenContentNoMediaPreview() {
-    MusicPlayerTheme {
-        PlayerScreenContentStateless(
-            hasMedia = false,
-            trackTitle = "",
-            trackArtists = "",
-            currentPosition = 0f,
-            duration = 0L,
-            isPlaying = false,
             onPlayPause = {},
             onNext = {},
             onPrevious = {},

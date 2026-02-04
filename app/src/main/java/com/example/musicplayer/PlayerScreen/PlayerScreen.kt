@@ -140,8 +140,6 @@ fun PlayerScreen(
             // Check if current media is valid audio format
             val currentUri = exoPlayer.currentMediaItem?.localConfiguration?.uri
             val isValidAudio = currentUri?.let { isValidAudioExtension(localContext, it) } ?: false
-
-            // Show PlayerScreenContent for audio files, AndroidView for non-audio files
             if (currentUri == null || isValidAudio) {
                 PlayerScreenContent(exoPlayer = exoPlayer)
             } else {
