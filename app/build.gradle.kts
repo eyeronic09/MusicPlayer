@@ -54,6 +54,8 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation(libs.androidx.room.ktx)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.core)
 
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
 
@@ -73,11 +75,10 @@ dependencies {
     kapt("androidx.room:room-compiler:$room_version")
 
     // ================= MEDIA3 (EXOPLAYER) =================
-    val media3_version = "1.3.1"
-
-    implementation("androidx.media3:media3-exoplayer:$media3_version")
-    implementation("androidx.media3:media3-ui:$media3_version")
-    implementation("androidx.media3:media3-extractor:$media3_version")
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.session)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.extractor)
 
     implementation("io.coil-kt:coil-compose:2.5.0")
 

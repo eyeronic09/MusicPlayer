@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -57,20 +58,5 @@ fun HomeScreen(
     state: HomeScreenUIState,
     onRefresh: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        androidx.compose.material3.Button(onClick = onRefresh) {
-            Text("Refresh List")
-        }
-        Text(text = "Welcome to Home", modifier = Modifier.padding(vertical = 8.dp))
-        LazyColumn {
-            items(state.SongList) { song ->
-                Text(text = "${song.displayName} - ${song.artist}")
-            }
-        }
-    }
-    Log.d("HomeScreen", "Current song list size: ${state.SongList.size}")
+
 }
