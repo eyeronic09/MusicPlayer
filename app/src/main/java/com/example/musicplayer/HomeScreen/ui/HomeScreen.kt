@@ -1,6 +1,7 @@
 package com.example.musicplayer.HomeScreen.ui
 
 import android.util.Log
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -10,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -66,23 +68,26 @@ fun HomeScreen(
 
 @Composable
 fun HomeScreenContent(state : HomeScreenUIState  ){
-    Column(modifier = Modifier.fillMaxSize()) {
-        when {
-            state.Loading -> {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-            }
-            state.ERROR?.isNotEmpty() == true -> {
-                Text(text = "Error: ${state.ERROR}", modifier = Modifier.padding(16.dp))
-            }
-            else -> {
-                LazyColumn {
-                    items(state.SongList) { audio ->
-                        AudioItem(audio = audio)
+    Scaffold() { padding ->
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            when {
+                state.Loading -> {
+                    Text("Loading ")
+                }
+                state.ERROR?.isNotEmpty() == true -> {
+                    Text(text = "Error: ${state.ERROR}", modifier = Modifier.padding(16.dp))
+                }
+                else -> {
+                    LazyColumn {
+                        items(state.SongList) { audio ->
+                            AudioItem(audio = audio)
+                        }
                     }
                 }
             }
         }
     }
+
 }
 @Composable
 fun AudioItem(audio: AudioFile) {

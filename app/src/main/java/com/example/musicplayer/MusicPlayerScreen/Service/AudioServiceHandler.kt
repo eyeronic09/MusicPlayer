@@ -35,15 +35,22 @@ class AudioServiceHandler(
         exoPlayer.prepare()
     }
 
-    suspend fun onPlayerEvent(playerEvent: PlayerEvent , selectedAudioIndex: Int = -1, seekPosition : Int = 0) {
+    suspend fun onPlayerEvents(
+        playerEvent: PlayerEvent,
+        selectedAudioIndex: Int = -1,
+        seekPosition: Long = 0
+    ) {
         when (playerEvent) {
             PlayerEvent.Backward -> exoPlayer.seekBack()
             PlayerEvent.Forward -> exoPlayer.seekForward()
-            PlayerEvent.PlayPause -> playOrPause()
-            PlayerEvent.Stop -> stopProgressUpdate()
-            is PlayerEvent.UpdateProgress -> exoPlayer.seekTo((exoPlayer.duration * playerEvent.newProgress).toLong())
+            PlayerEvent.SeekToNext -> exoPlayer.seekToNext()
             PlayerEvent.SeekToPrevious -> exoPlayer.seekToPrevious()
-            is PlayerEvent.SelectedAudioChange -> {
+            PlayerEvent.PlayPause -> playOrPause()
+            PlayerEvent.Stop -> {
+                exoPlayer.stop()
+                stopProgressUpdate()
+            }
+            PlayerEvent.SelectedAudioChange -> {
                 if (exoPlayer.currentMediaItemIndex != selectedAudioIndex) {
                     exoPlayer.seekToDefaultPosition(selectedAudioIndex)
                     _playerState.value = Playing(isPlaying = true)
@@ -51,15 +58,9 @@ class AudioServiceHandler(
                     startProgressUpdate()
                 }
             }
-            is PlayerEvent.SeekTo -> exoPlayer.seekTo(playerEvent.seekto)
-            is PlayerEvent.SeekToNext -> exoPlayer.seekToNext()
-            is PlayerEvent.SelectedAudioIndex -> {
-                if (exoPlayer.currentMediaItemIndex != playerEvent.index) {
-                    exoPlayer.seekToDefaultPosition(playerEvent.index)
-                    _playerState.value = Playing(isPlaying = true)
-                    exoPlayer.play()
-                    startProgressUpdate()
-                }
+            PlayerEvent.SeekTo -> exoPlayer.seekTo(seekPosition)
+            is PlayerEvent.UpdateProgress -> {
+                exoPlayer.seekTo((exoPlayer.duration * playerEvent.newProgress).toLong())
             }
         }
     }
@@ -76,7 +77,6 @@ class AudioServiceHandler(
 
             Player.STATE_ENDED -> {}
             Player.STATE_IDLE -> {
-                TODO()
             }
         }
     }
@@ -105,12 +105,12 @@ class AudioServiceHandler(
         job?.cancel()
         _playerState.value = AudioState.Playing(isPlaying = false)
     }
-    private fun playOrPause(){
-        if (exoPlayer.isPlaying){
+
+    private fun playOrPause() {
+        if (exoPlayer.isPlaying) {
             exoPlayer.pause()
             stopProgressUpdate()
-        }
-        else{
+        } else {
             exoPlayer.play()
             _playerState.value = AudioState.Playing(isPlaying = true)
             startProgressUpdate()
@@ -120,15 +120,14 @@ class AudioServiceHandler(
 
 sealed class PlayerEvent {
     object PlayPause : PlayerEvent()
-    data class SelectedAudioChange(val index: Int) : PlayerEvent()
+    object SelectedAudioChange : PlayerEvent()
     object Backward : PlayerEvent()
-    data class SeekToNext(val Seek: Long) : PlayerEvent()
+    object SeekToNext : PlayerEvent()
     object SeekToPrevious : PlayerEvent()
     object Forward : PlayerEvent()
-    data class UpdateProgress(val newProgress: Float) : PlayerEvent()
+    object SeekTo : PlayerEvent()
     object Stop : PlayerEvent()
-    data class SeekTo(val seekto : Long): PlayerEvent()
-    data class SelectedAudioIndex(val index: Int) : PlayerEvent()
+    data class UpdateProgress(val newProgress: Float) : PlayerEvent()
 }
 
 sealed class AudioState {
