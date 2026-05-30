@@ -3,6 +3,7 @@ package com.example.musicplayer.MusicPlayerScreen.Service
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import com.example.musicplayer.MusicPlayerScreen.Service.AudioState.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -41,17 +42,25 @@ class AudioServiceHandler(
             PlayerEvent.PlayPause -> playOrPause()
             PlayerEvent.Stop -> stopProgressUpdate()
             is PlayerEvent.UpdateProgress -> exoPlayer.seekTo((exoPlayer.duration * playerEvent.newProgress).toLong())
-            PlayerEvent.SeekToNext -> exoPlayer.seekToNext()
             PlayerEvent.SeekToPrevious -> exoPlayer.seekToPrevious()
-            PlayerEvent.SelectedAudioChange -> {
+            is PlayerEvent.SelectedAudioChange -> {
                 if (exoPlayer.currentMediaItemIndex != selectedAudioIndex) {
                     exoPlayer.seekToDefaultPosition(selectedAudioIndex)
-                    _playerState.value = AudioState.Playing(isPlaying = true)
+                    _playerState.value = Playing(isPlaying = true)
                     exoPlayer.play()
                     startProgressUpdate()
                 }
             }
-            PlayerEvent.SeekTo -> exoPlayer.seekTo(seekPosition.toLong())
+            is PlayerEvent.SeekTo -> exoPlayer.seekTo(playerEvent.seekto)
+            is PlayerEvent.SeekToNext -> exoPlayer.seekToNext()
+            is PlayerEvent.SelectedAudioIndex -> {
+                if (exoPlayer.currentMediaItemIndex != playerEvent.index) {
+                    exoPlayer.seekToDefaultPosition(playerEvent.index)
+                    _playerState.value = Playing(isPlaying = true)
+                    exoPlayer.play()
+                    startProgressUpdate()
+                }
+            }
         }
     }
 
@@ -111,14 +120,15 @@ class AudioServiceHandler(
 
 sealed class PlayerEvent {
     object PlayPause : PlayerEvent()
-    object SelectedAudioChange : PlayerEvent()
+    data class SelectedAudioChange(val index: Int) : PlayerEvent()
     object Backward : PlayerEvent()
-    object SeekToNext : PlayerEvent()
+    data class SeekToNext(val Seek: Long) : PlayerEvent()
     object SeekToPrevious : PlayerEvent()
     object Forward : PlayerEvent()
-    object SeekTo : PlayerEvent()
-    object Stop : PlayerEvent()
     data class UpdateProgress(val newProgress: Float) : PlayerEvent()
+    object Stop : PlayerEvent()
+    data class SeekTo(val seekto : Long): PlayerEvent()
+    data class SelectedAudioIndex(val index: Int) : PlayerEvent()
 }
 
 sealed class AudioState {

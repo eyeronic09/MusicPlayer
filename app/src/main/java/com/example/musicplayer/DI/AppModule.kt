@@ -6,7 +6,7 @@ import com.example.musicplayer.HomeScreen.data.Reposistory.ReposistoryImpl
 import com.example.musicplayer.HomeScreen.domain.reposistory.MusicRepository
 import com.example.musicplayer.HomeScreen.ui.HomeScreenViewModel
 import com.example.musicplayer.MusicPlayerScreen.Service.AudioServiceHandler
-import com.example.musicplayer.MusicPlayerScreen.UI.AudioViewModel
+import com.example.musicplayer.MusicPlayerScreen.UI.MusicViewModel
 import com.example.musicplayer.MusicPlayerScreen.notification.NotificationManager
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -42,7 +42,11 @@ class AppModule : Application() {
         }
 
         viewModel {
-            AudioViewModel(get())
+            MusicViewModel(
+                audioService = get(),
+                repository = get(),
+                saveStateHandler = get()
+            )
         }
     }
 }

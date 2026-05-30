@@ -22,8 +22,6 @@ import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 import com.example.musicplayer.HomeScreen.ui.HomeScreenTab
-import com.example.musicplayer.tabs.LibraryTab
-import com.example.musicplayer.tabs.SearchTab
 import com.example.musicplayer.ui.theme.MusicPlayerTheme
 
 class MainActivity : ComponentActivity() {
@@ -46,8 +44,6 @@ class MainActivity : ComponentActivity() {
                         bottomBar = {
                             NavigationBar {
                                 TabNavigatorItem(HomeScreenTab)
-                                TabNavigatorItem(SearchTab)
-                                TabNavigatorItem(LibraryTab)
                             }
                         }
                     ) { innerPadding ->
