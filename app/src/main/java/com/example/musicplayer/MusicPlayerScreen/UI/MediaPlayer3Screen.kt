@@ -1,4 +1,4 @@
-package com.example.musicplayer.HomeScreen.ui
+package com.example.musicplayer.MusicPlayerScreen.UI
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -12,18 +12,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -44,22 +39,17 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import com.example.musicplayer.HomeScreen.domain.model.AudioFile
-import com.example.musicplayer.MusicPlayerScreen.UI.MusicEvent
-import com.example.musicplayer.MusicPlayerScreen.UI.MusicViewModel
 import org.koin.androidx.compose.koinViewModel
-import kotlin.math.floor
 
-object HomeScreenTab : Tab {
+object MediaPlayerTab : Tab {
     override val options: TabOptions
         @Composable
         get() {
-            val title = "Home"
-            val icon = rememberVectorPainter(Icons.Default.Home)
-
+            val icon = rememberVectorPainter(Icons.Default.PlayArrow)
             return remember {
                 TabOptions(
                     index = 0u,
-                    title = title,
+                    title = "Player",
                     icon = icon
                 )
             }
@@ -67,117 +57,48 @@ object HomeScreenTab : Tab {
 
     @Composable
     override fun Content() {
-        HomeScreenRoot()
+        val viewModel: MusicViewModel = koinViewModel()
+        MediaPlayerScreenContent(
+            progress = viewModel.progress,
+            onProgress = { viewModel.onEvent(MusicEvent.UpdateProgress(it)) },
+            isAudioPlaying = viewModel.isPlaying,
+            audio = viewModel.currentSelectedAudio,
+            onStart = { viewModel.onEvent(MusicEvent.PlayPause) },
+            onNext = { viewModel.onEvent(MusicEvent.SeekToNext) }
+        )
     }
 }
 
 @Composable
-fun HomeScreenRoot(viewModel: MusicViewModel = koinViewModel()) {
-    HomeScreen(
-        progress = viewModel.progress,
-        onProgress = { viewModel.onEvent(MusicEvent.UpdateProgress(it)) },
-        isAudioPlaying = viewModel.isPlaying,
-        currentPlayingAudio = viewModel.currentSelectedAudio,
-        audiList = viewModel.audioList,
-        onStart = { viewModel.onEvent(MusicEvent.PlayPause) },
-        onItemClick = { viewModel.onEvent(MusicEvent.SelectedAudioChange(it)) },
-        onNext = { viewModel.onEvent(MusicEvent.SeekToNext) }
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun HomeScreen(
+fun MediaPlayerScreenContent(
     progress: Float,
     onProgress: (Float) -> Unit,
     isAudioPlaying: Boolean,
-    currentPlayingAudio: AudioFile,
-    audiList: List<AudioFile>,
+    audio: AudioFile,
     onStart: () -> Unit,
-    onItemClick: (Int) -> Unit,
-    onNext: () -> Unit,
+    onNext: () -> Unit
 ) {
     Scaffold(
         bottomBar = {
             BottomBarPlayer(
                 progress = progress,
                 onProgress = onProgress,
-                audio = currentPlayingAudio,
+                audio = audio,
+                isAudioPlaying = isAudioPlaying,
                 onStart = onStart,
-                onNext = onNext,
-                isAudioPlaying = isAudioPlaying
+                onNext = onNext
             )
         }
-    ) { paddingValues ->
-        LazyColumn(
-            contentPadding = paddingValues,
-            modifier = Modifier.fillMaxSize()
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            contentAlignment = Alignment.Center
         ) {
-            itemsIndexed(audiList) { index, audio ->
-                AudioItem(
-                    audio = audio,
-                    isSelected = audio.id == currentPlayingAudio.id,
-                    onItemClick = { onItemClick(index) }
-                )
-            }
+            Text(text = "Now Playing: ${audio.displayName}", style = MaterialTheme.typography.headlineMedium)
         }
     }
-}
-
-@Composable
-fun AudioItem(
-    audio: AudioFile,
-    isSelected: Boolean,
-    onItemClick: () -> Unit,
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-            .clickable {
-                onItemClick()
-            },
-        border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(8.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(8.dp),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = audio.displayName,
-                    style = MaterialTheme.typography.titleMedium,
-                    overflow = TextOverflow.Ellipsis,
-                    maxLines = 1
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = audio.artist,
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            Text(
-                text = timeStampToDuration(audio.duration.toLong()),
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(modifier = Modifier.size(8.dp))
-        }
-    }
-}
-
-private fun timeStampToDuration(position: Long): String {
-    val totalSecond = floor(position / 1E3).toInt()
-    val minutes = totalSecond / 60
-    val remainingSeconds = totalSecond - (minutes * 60)
-    return if (position < 0) "--:--"
-    else "%d:%02d".format(minutes, remainingSeconds)
 }
 
 @Composable
@@ -222,35 +143,6 @@ fun BottomBarPlayer(
 }
 
 @Composable
-fun MediaPlayerController(
-    isAudioPlaying: Boolean,
-    onStart: () -> Unit,
-    onNext: () -> Unit,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .height(56.dp)
-            .padding(4.dp)
-    ) {
-        PlayerIconItem(
-            icon = if (isAudioPlaying) Icons.Default.Pause
-            else Icons.Default.PlayArrow
-        ) {
-            onStart()
-        }
-        Spacer(modifier = Modifier.size(8.dp))
-        Icon(
-            imageVector = Icons.Default.SkipNext,
-            modifier = Modifier.clickable {
-                onNext()
-            },
-            contentDescription = null
-        )
-    }
-}
-
-@Composable
 fun ArtistInfo(
     modifier: Modifier = Modifier,
     audio: AudioFile,
@@ -265,9 +157,7 @@ fun ArtistInfo(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.onSurface
             )
-        ) {
-            // Optional: Add action for clicking the artist info icon
-        }
+        ) {}
         Spacer(modifier = Modifier.size(4.dp))
         Column {
             Text(
@@ -317,5 +207,34 @@ fun PlayerIconItem(
                 contentDescription = null
             )
         }
+    }
+}
+
+@Composable
+fun MediaPlayerController(
+    isAudioPlaying: Boolean,
+    onStart: () -> Unit,
+    onNext: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .height(56.dp)
+            .padding(4.dp)
+    ) {
+        PlayerIconItem(
+            icon = if (isAudioPlaying) Icons.Default.Pause
+            else Icons.Default.PlayArrow
+        ) {
+            onStart()
+        }
+        Spacer(modifier = Modifier.size(8.dp))
+        Icon(
+            imageVector = Icons.Default.SkipNext,
+            modifier = Modifier.clickable {
+                onNext()
+            },
+            contentDescription = null
+        )
     }
 }

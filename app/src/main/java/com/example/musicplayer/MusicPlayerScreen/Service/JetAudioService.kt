@@ -36,16 +36,22 @@ class JetAudioService : MediaSessionService() {
 
     override fun onDestroy() {
         mediaSession?.run {
-            player.release()
-            if(player.playbackState != Player.STATE_IDLE){
-                player.seekTo(0)
-                player.playWhenReady = false
+            // DO NOT release the singleton player here, just stop it
+            if (player.playbackState != Player.STATE_IDLE) {
                 player.stop()
+                player.clearMediaItems()
             }
+            release()
         }
-        mediaSession?.release()
         mediaSession = null
         super.onDestroy()
     }
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        // If music is not playing, stop the service
+        if (!exoPlayer.playWhenReady || exoPlayer.playbackState == Player.STATE_IDLE) {
+            stopSelf()
+        }
+    }
 }

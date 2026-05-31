@@ -1,6 +1,8 @@
 package com.example.musicplayer.DI
 
 import android.app.Application
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.exoplayer.ExoPlayer
 import com.example.musicplayer.HomeScreen.data.Reposistory.ReposistoryImpl
 import com.example.musicplayer.HomeScreen.domain.reposistory.MusicRepository
@@ -23,10 +25,18 @@ class AppModule : Application() {
     }
 
     private val appModule = module {
-        single<MusicRepository> { ReposistoryImpl(get()) }
+        single<MusicRepository> { ReposistoryImpl(androidContext()) }
         
         single {
-            ExoPlayer.Builder(androidContext()).build()
+            val audioAttributes = AudioAttributes.Builder()
+                .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                .setUsage(C.USAGE_MEDIA)
+                .build()
+
+            ExoPlayer.Builder(androidContext())
+                .setAudioAttributes(audioAttributes, true)
+                .setHandleAudioBecomingNoisy(true)
+                .build()
         }
         
         single {
@@ -45,6 +55,7 @@ class AppModule : Application() {
             MusicViewModel(
                 audioService = get(),
                 repository = get(),
+                context = androidContext(),
                 saveStateHandler = get()
             )
         }

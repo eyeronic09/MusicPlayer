@@ -1,6 +1,8 @@
 package com.example.musicplayer.MusicPlayerScreen.Service
 
+import android.util.Log
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.example.musicplayer.MusicPlayerScreen.Service.AudioState.*
@@ -26,16 +28,17 @@ class AudioServiceHandler(
     }
 
     fun addMediaItem(mediaItem: MediaItem) {
-        exoPlayer.setMediaItem(mediaItem)
+        exoPlayer.addMediaItem(mediaItem)
         exoPlayer.prepare()
     }
 
     fun setMediaItems(mediaItems: List<MediaItem>) {
+        Log.d("AudioServiceHandler", "Setting ${mediaItems.size} media items")
         exoPlayer.setMediaItems(mediaItems)
         exoPlayer.prepare()
     }
 
-    suspend fun onPlayerEvents(
+    fun onPlayerEvents(
         playerEvent: PlayerEvent,
         selectedAudioIndex: Int = -1,
         seekPosition: Long = 0
@@ -51,16 +54,24 @@ class AudioServiceHandler(
                 stopProgressUpdate()
             }
             PlayerEvent.SelectedAudioChange -> {
-                if (exoPlayer.currentMediaItemIndex != selectedAudioIndex) {
+                if (selectedAudioIndex != -1) {
+                    Log.d("AudioServiceHandler", "Changing audio to index: $selectedAudioIndex")
+                    val mediaItem = exoPlayer.getMediaItemAt(selectedAudioIndex)
+                    Log.d("AudioServiceHandler", "Media URI: ${mediaItem.localConfiguration?.uri}")
+                    
                     exoPlayer.seekToDefaultPosition(selectedAudioIndex)
-                    _playerState.value = Playing(isPlaying = true)
+                    exoPlayer.playWhenReady = true
+                    exoPlayer.prepare() // Ensure preparedL
                     exoPlayer.play()
+                    _playerState.value = Playing(isPlaying = true)
                     startProgressUpdate()
                 }
             }
             PlayerEvent.SeekTo -> exoPlayer.seekTo(seekPosition)
             is PlayerEvent.UpdateProgress -> {
-                exoPlayer.seekTo((exoPlayer.duration * playerEvent.newProgress).toLong())
+                if (exoPlayer.duration > 0) {
+                    exoPlayer.seekTo((exoPlayer.duration * playerEvent.newProgress).toLong())
+                }
             }
         }
     }
@@ -68,22 +79,24 @@ class AudioServiceHandler(
     override fun onPlaybackStateChanged(playbackState: Int) {
         when (playbackState) {
             Player.STATE_READY -> {
+                Log.d("AudioServiceHandler", "Player Ready, duration: ${exoPlayer.duration}")
                 _playerState.value = AudioState.Ready(exoPlayer.duration)
             }
-
             Player.STATE_BUFFERING -> {
                 _playerState.value = AudioState.Buffering(exoPlayer.currentPosition)
             }
-
-            Player.STATE_ENDED -> {}
+            Player.STATE_ENDED -> {
+                _playerState.value = Playing(isPlaying = false)
+            }
             Player.STATE_IDLE -> {
+                Log.d("AudioServiceHandler", "Player Idle")
             }
         }
     }
-
     override fun onIsPlayingChanged(isPlaying: Boolean) {
-        _playerState.value = AudioState.Playing(isPlaying)
-        _playerState.value = AudioState.CurrentPlaying(exoPlayer.currentMediaItemIndex)
+        Log.d("AudioServiceHandler", "Is Playing: $isPlaying")
+        _playerState.value = Playing(isPlaying)
+        _playerState.value = CurrentPlaying(exoPlayer.currentMediaItemIndex)
         if (isPlaying) {
             startProgressUpdate()
         } else {
@@ -91,11 +104,18 @@ class AudioServiceHandler(
         }
     }
 
+    override fun onPlayerError(error: PlaybackException) {
+        Log.e("AudioServiceHandler", "Player Error: ${error.errorCodeName} (${error.errorCode})", error)
+        Log.e("AudioServiceHandler", "Failing URI: ${exoPlayer.currentMediaItem?.localConfiguration?.uri}")
+    }
+
     private fun startProgressUpdate() {
         job?.cancel()
         job = scope.launch {
             while (true) {
-                _playerState.value = AudioState.Progress(exoPlayer.currentPosition)
+                if (exoPlayer.isPlaying) {
+                    _playerState.value = Progress(exoPlayer.currentPosition)
+                }
                 delay(1000)
             }
         }
@@ -103,7 +123,6 @@ class AudioServiceHandler(
 
     private fun stopProgressUpdate() {
         job?.cancel()
-        _playerState.value = AudioState.Playing(isPlaying = false)
     }
 
     private fun playOrPause() {
@@ -111,8 +130,8 @@ class AudioServiceHandler(
             exoPlayer.pause()
             stopProgressUpdate()
         } else {
+            exoPlayer.prepare()
             exoPlayer.play()
-            _playerState.value = AudioState.Playing(isPlaying = true)
             startProgressUpdate()
         }
     }

@@ -1,6 +1,7 @@
 package com.example.musicplayer.MusicPlayerScreen.UI
 
-import java.util.concurrent.TimeUnit
+import android.content.Context
+import android.content.Intent
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -12,6 +13,7 @@ import com.example.musicplayer.HomeScreen.domain.model.AudioFile
 import com.example.musicplayer.HomeScreen.domain.reposistory.MusicRepository
 import com.example.musicplayer.MusicPlayerScreen.Service.AudioServiceHandler
 import com.example.musicplayer.MusicPlayerScreen.Service.AudioState
+import com.example.musicplayer.MusicPlayerScreen.Service.JetAudioService
 import com.example.musicplayer.MusicPlayerScreen.Service.PlayerEvent
 import com.example.musicplayer.MusicPlayerScreen.mapper.toMediaItem
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,12 +21,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 
 private val audioDummy = AudioFile(
-    id = 1,
-    displayName = "",
-    artist = "",
-    album = "",
+    id = -1,
+    displayName = "No Audio",
+    artist = "Unknown",
+    album = "Unknown",
     duration = 0
 )
 
@@ -32,29 +35,28 @@ private val audioDummy = AudioFile(
 class MusicViewModel(
     private val audioService: AudioServiceHandler,
     private val repository: MusicRepository,
+    private val context: Context,
     saveStateHandler: SavedStateHandle
 ) : ViewModel() {
 
     var duration by saveStateHandler.saveable { mutableStateOf(0L) }
     var progress by saveStateHandler.saveable { mutableStateOf(0f) }
-    var progressString by saveStateHandler.saveable { mutableStateOf("00:00") }
     var isPlaying by saveStateHandler.saveable { mutableStateOf(false) }
     var currentSelectedAudio by saveStateHandler.saveable { mutableStateOf(audioDummy) }
     var audioList by saveStateHandler.saveable { mutableStateOf(listOf<AudioFile>()) }
 
-
     private val _uiState = MutableStateFlow<UiState>(UiState.Initial)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
-
     init {
         loadAudioData()
+        startService()
         viewModelScope.launch {
             audioService.playerState.collectLatest { state ->
                 when (state) {
                     is AudioState.Buffering -> calculateProgress(state.progress)
                     is AudioState.CurrentPlaying -> {
-                        if (audioList.isNotEmpty()) {
+                        if (audioList.isNotEmpty() && state.mediaItemIndex >= 0 && state.mediaItemIndex < audioList.size) {
                             currentSelectedAudio = audioList[state.mediaItemIndex]
                         }
                     }
@@ -129,7 +131,7 @@ class MusicViewModel(
 
     fun formatDuration(duration: Long): String {
         val minutes = TimeUnit.MINUTES.convert(duration, TimeUnit.MILLISECONDS)
-        val seconds = TimeUnit.SECONDS.convert(duration, TimeUnit.MILLISECONDS) - 
+        val seconds = TimeUnit.SECONDS.convert(duration, TimeUnit.MILLISECONDS) -
                 TimeUnit.SECONDS.convert(minutes, TimeUnit.MINUTES)
         return String.format("%02d:%02d", minutes, seconds)
     }
@@ -150,8 +152,12 @@ class MusicViewModel(
             )
         }
     }
-}
 
+    private fun startService() {
+        val intent = Intent(context, JetAudioService::class.java)
+        context.startService(intent)
+    }
+}
 
 sealed class MusicEvent {
     object PlayPause : MusicEvent()
@@ -160,8 +166,8 @@ sealed class MusicEvent {
     object SeekToNext : MusicEvent()
     object SeekToPrevious : MusicEvent()
     object Forward : MusicEvent()
-    data class UpdateProgress(val newProgress: Float) : MusicEvent() // Percentage (0.0 - 1.0)
-    data class LongUpdateProgress(val newProgress: Long) : MusicEvent() // Absolute position (ms)
+    data class UpdateProgress(val newProgress: Float) : MusicEvent()
+    data class LongUpdateProgress(val newProgress: Long) : MusicEvent()
     object Stop : MusicEvent()
     data class SeekTo(val seekto: Float) : MusicEvent()
     data class SelectedAudioIndex(val index: Int) : MusicEvent()
