@@ -10,7 +10,8 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 data class AudioFile(
     val id: Long,
-    val displayName: String,
+    val albumIdForArt: Long,
+    val displayName : String,
     val artist: String,
     val album: String,
     val duration: Int,
@@ -19,5 +20,11 @@ data class AudioFile(
     val uri: Uri = ContentUris.withAppendedId(
         MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
         id
+    )
+
+    @IgnoredOnParcel
+    val albumArtUri: Uri = ContentUris.withAppendedId(
+        Uri.parse("content://media/external/audio/albumart"),
+        albumIdForArt
     )
 }

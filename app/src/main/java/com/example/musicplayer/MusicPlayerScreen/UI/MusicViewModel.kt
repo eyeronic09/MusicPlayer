@@ -28,7 +28,8 @@ private val audioDummy = AudioFile(
     displayName = "No Audio",
     artist = "Unknown",
     album = "Unknown",
-    duration = 0
+    duration = 0,
+    albumIdForArt = -1
 )
 
 @OptIn(SavedStateHandleSaveableApi::class)
@@ -44,6 +45,7 @@ class MusicViewModel(
     var isPlaying by saveStateHandler.saveable { mutableStateOf(false) }
     var currentSelectedAudio by saveStateHandler.saveable { mutableStateOf(audioDummy) }
     var audioList by saveStateHandler.saveable { mutableStateOf(listOf<AudioFile>()) }
+    var albumIdForArt by saveStateHandler.saveable { mutableStateOf("") }
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Initial)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -59,6 +61,7 @@ class MusicViewModel(
                         if (audioList.isNotEmpty() && state.mediaItemIndex >= 0 && state.mediaItemIndex < audioList.size) {
                             currentSelectedAudio = audioList[state.mediaItemIndex]
                         }
+
                     }
                     AudioState.Initial -> _uiState.value = UiState.Initial
                     is AudioState.Playing -> {
@@ -138,9 +141,11 @@ class MusicViewModel(
 
     private fun loadAudioData() {
         viewModelScope.launch {
+            // get the audio to play
             val audioFiles = repository.getAudioFiles()
             audioList = audioFiles
             val mappedAudio = audioFiles.map { it.toMediaItem() }
+            //launch it
             setMediaItems(mappedAudio)
         }
     }

@@ -80,10 +80,10 @@ class AudioServiceHandler(
         when (playbackState) {
             Player.STATE_READY -> {
                 Log.d("AudioServiceHandler", "Player Ready, duration: ${exoPlayer.duration}")
-                _playerState.value = AudioState.Ready(exoPlayer.duration)
+                _playerState.value = Ready(exoPlayer.duration)
             }
             Player.STATE_BUFFERING -> {
-                _playerState.value = AudioState.Buffering(exoPlayer.currentPosition)
+                _playerState.value = Buffering(exoPlayer.currentPosition)
             }
             Player.STATE_ENDED -> {
                 _playerState.value = Playing(isPlaying = false)
@@ -128,10 +128,12 @@ class AudioServiceHandler(
     private fun playOrPause() {
         if (exoPlayer.isPlaying) {
             exoPlayer.pause()
+            _playerState.value = Playing(isPlaying = false)
             stopProgressUpdate()
         } else {
             exoPlayer.prepare()
             exoPlayer.play()
+            _playerState.value = Playing(isPlaying = true)
             startProgressUpdate()
         }
     }

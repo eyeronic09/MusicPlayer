@@ -34,6 +34,7 @@ class ReposistoryImpl(
                 val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DISPLAY_NAME)
                 val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ARTIST)
                 val durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DURATION)
+                val albumIdColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ALBUM_ID)
                 val albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ALBUM)
 
                 while (cursor.moveToNext()) {
@@ -41,6 +42,7 @@ class ReposistoryImpl(
                     val name = cursor.getString(nameColumn)
                     val artist = cursor.getString(artistColumn)
                     val duration = cursor.getInt(durationColumn)
+                    val albumId = cursor.getLong(albumIdColumn)
                     val album = cursor.getString(albumColumn)
                     audioFiles.add(
                         AudioFile(
@@ -48,6 +50,7 @@ class ReposistoryImpl(
                             displayName = name,
                             artist = artist,
                             album = album,
+                            albumIdForArt = albumId,
                             duration = duration
                         )
                     )

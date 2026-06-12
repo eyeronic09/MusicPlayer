@@ -13,6 +13,7 @@ fun AudioFile.toMediaItem() : MediaItem{
                 .setTitle(displayName)
                 .setArtist(artist)
                 .setAlbumTitle(album)
+                .setArtworkUri(uri)
                 .build()
         )
         .build()
