@@ -55,7 +55,8 @@ fun HomeScreenRoot(viewModel: MusicViewModel = koinViewModel()) {
         audiList = viewModel.audioList,
         onStart = { viewModel.onEvent(MusicEvent.PlayPause) },
         onItemClick = { viewModel.onEvent(MusicEvent.SelectedAudioChange(it)) },
-        onNext = { viewModel.onEvent(MusicEvent.SeekToNext) }
+        onNext = { viewModel.onEvent(MusicEvent.SeekToNext) },
+        onPrevious = { viewModel.onEvent(MusicEvent.SeekToPrevious) }
     )
 }
 
@@ -70,6 +71,7 @@ fun HomeScreen(
     onStart: () -> Unit,
     onItemClick: (Int) -> Unit,
     onNext: () -> Unit,
+    onPrevious: () -> Unit,
 ) {
     Scaffold(
         bottomBar = {
@@ -79,7 +81,8 @@ fun HomeScreen(
                 audio = currentPlayingAudio,
                 onStart = onStart,
                 onNext = onNext,
-                isAudioPlaying = isAudioPlaying
+                isAudioPlaying = isAudioPlaying,
+                onPrevious = onPrevious,
             )
         }
     ) { paddingValues ->
@@ -116,7 +119,8 @@ fun HomeScreenPreview() {
             audiList = mockAudioList,
             onStart = {},
             onItemClick = {},
-            onNext = {}
+            onNext = {},
+            onPrevious = {}
         )
     }
 }

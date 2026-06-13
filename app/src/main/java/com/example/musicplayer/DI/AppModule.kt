@@ -4,7 +4,9 @@ import android.app.Application
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.room.Room
 import com.example.musicplayer.HomeScreen.data.Reposistory.ReposistoryImpl
+import com.example.musicplayer.HomeScreen.data.local.database.SONG_DB
 import com.example.musicplayer.HomeScreen.domain.reposistory.MusicRepository
 import com.example.musicplayer.HomeScreen.ui.HomeScreenViewModel
 import com.example.musicplayer.MusicPlayerScreen.Service.AudioServiceHandler
@@ -25,6 +27,18 @@ class AppModule : Application() {
     }
 
     private val appModule = module {
+        // Room Database
+        single {
+            Room.databaseBuilder(
+                androidContext(),
+                SONG_DB::class.java,
+                "song_db"
+            ).build()
+        }
+
+        // DAO
+        single { get<SONG_DB>().dao() }
+
         single<MusicRepository> { ReposistoryImpl(androidContext()) }
         
         single {

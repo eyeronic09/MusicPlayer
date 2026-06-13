@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -27,6 +26,7 @@ fun BottomBarPlayer(
     isAudioPlaying: Boolean,
     onStart: () -> Unit,
     onNext: () -> Unit,
+    onPrevious:() -> Unit
 ) {
     BottomAppBar(
         modifier = Modifier.height(150.dp)
@@ -48,7 +48,8 @@ fun BottomBarPlayer(
                 MediaPlayerController(
                     isAudioPlaying = isAudioPlaying,
                     onStart = onStart,
-                    onNext = onNext
+                    onNext = onNext,
+                    onPrevious = onPrevious
                 )
             }
             Row(
@@ -88,6 +89,7 @@ fun BottomBarPlayerPreview() {
         ),
         isAudioPlaying = true,
         onStart = {},
-        onNext = {}
+        onNext = {},
+        onPrevious = {}
     )
 }

@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -109,6 +110,7 @@ fun MediaPlayerController(
     isAudioPlaying: Boolean,
     onStart: () -> Unit,
     onNext: () -> Unit,
+    onPrevious: () -> Unit,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -116,7 +118,15 @@ fun MediaPlayerController(
             .height(56.dp)
             .padding(4.dp)
     ) {
-        PlayerIconItem(
+        Icon(
+            imageVector = Icons.Default.SkipPrevious,
+            modifier = Modifier.clickable {
+                onPrevious()
+            },
+            contentDescription = null
+        )
+        Spacer(modifier = Modifier.size(8.dp))
+         PlayerIconItem(
             icon = if (isAudioPlaying) Icons.Default.Pause
             else Icons.Default.PlayArrow
         ) {
