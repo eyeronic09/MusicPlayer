@@ -3,11 +3,19 @@ package com.example.musicplayer.HomeScreen.data.Reposistory
 import android.content.Context
 import android.provider.MediaStore
 import android.util.Log
+import androidx.compose.runtime.invalidateGroupsWithKey
+import com.example.musicplayer.HomeScreen.data.local.dao.SongDao
+import com.example.musicplayer.HomeScreen.data.local.entity.SongEntity
+import com.example.musicplayer.HomeScreen.data.local.mapper.toAudioFile
 import com.example.musicplayer.HomeScreen.domain.model.AudioFile
 import com.example.musicplayer.HomeScreen.domain.reposistory.MusicRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 class ReposistoryImpl(
-    private val context: Context
+    private val context: Context,
+    private val songDao: SongDao
+
 ) : MusicRepository {
     override fun getAudioFiles(): List<AudioFile> {
         Log.d("MusicRepository", "Fetching audio files...")
@@ -62,4 +70,14 @@ class ReposistoryImpl(
         Log.d("MusicRepository", "Found ${audioFiles.size} audio files")
         return audioFiles
     }
+
+    override fun getAllAudioFilesFromDb(): Flow<List<AudioFile>> {
+        return songDao.getAllSong().map { note -> note.map { it -> it.toAudioFile() }}
+    }
+
+    override fun insertSongEntity(songEntity: SongEntity) {
+        return songDao.insertSong(songEntity)
+    }
+
+
 }
