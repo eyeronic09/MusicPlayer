@@ -39,7 +39,7 @@ class AppModule : Application() {
         // DAO
         single { get<SONG_DB>().dao() }
 
-        single<MusicRepository> { ReposistoryImpl(androidContext()) }
+        single<MusicRepository> { ReposistoryImpl(androidContext() , get()) }
         
         single {
             val audioAttributes = AudioAttributes.Builder()
