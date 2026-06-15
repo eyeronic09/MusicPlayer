@@ -2,15 +2,15 @@ package com.example.musicplayer.HomeScreen.data.local.converter
 
 import android.net.Uri
 import androidx.core.net.toUri
-import androidx.room.TypeConverters
+import androidx.room.TypeConverter
 
-class converter {
-    @TypeConverters
-    fun toURI(uri : Uri?): String {
-        return uri.toString()
+class Converters {
+    @TypeConverter
+    fun fromUri(uri : Uri?): String? {
+        return uri?.toString()
     }
-    @TypeConverters
-    fun toString(str : String?) : Uri? {
+    @TypeConverter
+    fun toUri(str : String?) : Uri? {
         return str?.toUri()
     }
 }

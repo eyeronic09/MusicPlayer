@@ -19,7 +19,9 @@ import com.example.musicplayer.MusicPlayerScreen.mapper.toMediaItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
@@ -51,6 +53,9 @@ class MusicViewModel(
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            repository.insertMediaStoreToDB()
+        }
         loadAudioData()
         startService()
         viewModelScope.launch {
@@ -141,21 +146,18 @@ class MusicViewModel(
 
     private fun loadAudioData() {
         viewModelScope.launch {
-            // get the audio to play
-            val audioFiles = repository.getAudioFiles()
-            audioList = audioFiles
-            val mappedAudio = audioFiles.map { it.toMediaItem() }
-            //launch it
-            setMediaItems(mappedAudio)
+            repository.getAllAudioFilesFromDb().collectLatest { audioFiles ->
+                this@MusicViewModel.audioList = audioFiles
+                val mediaItems = audioFiles.map { it.toMediaItem() }
+                setMediaItems(mediaItems)
+            }
         }
     }
 
     private fun setMediaItems(audioList: List<MediaItem>) {
-        viewModelScope.launch {
-            audioService.setMediaItems(
-                mediaItems = audioList
-            )
-        }
+        audioService.setMediaItems(
+            mediaItems = audioList
+        )
     }
 
     private fun startService() {

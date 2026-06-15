@@ -7,9 +7,15 @@ import com.example.musicplayer.HomeScreen.domain.model.AudioFile
 import com.example.musicplayer.HomeScreen.domain.reposistory.MusicRepository
 import com.google.common.base.Objects
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.compose
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -34,13 +40,15 @@ class HomeScreenViewModel(private val repository: MusicRepository) : ViewModel()
         viewModelScope.launch {
             _uiState.update { it.copy(Loading = true) }
             try {
-                val audio = withContext(Dispatchers.IO) {
-                    repository.getAudioFiles()
+                repository.getAllAudioFilesFromDb().collectLatest { song ->
+                    _uiState.update {
+                        it.copy(
+                            SongList = song,
+                            Loading = false
+                        )
+                    }
                 }
-                Log.d("HomeScreenViewModel", "Loaded ${audio.size} songs")
-                _uiState.update {
-                    it.copy(SongList = audio, Loading = false, ERROR = null)
-                }
+
             } catch (e: Exception) {
                 Log.e("HomeScreenViewModel", "Error loading songs", e)
                 _uiState.update { it.copy(Loading = false, ERROR = e.localizedMessage) }

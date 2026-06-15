@@ -1,5 +1,6 @@
 package com.example.musicplayer.HomeScreen.ui
 
+import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -91,12 +92,14 @@ fun HomeScreen(
             modifier = Modifier.fillMaxSize(),
         ) {
             itemsIndexed(audiList) { index, audio ->
+                Log.d("HomeScreen", "Rendering index: $index, audio: ${audio.displayName}")
                 AudioItem(
                     audio = audio,
                     isSelected = audio.id == currentPlayingAudio.id,
                     onItemClick = { onItemClick(index) }
                 )
             }
+
         }
     }
 }

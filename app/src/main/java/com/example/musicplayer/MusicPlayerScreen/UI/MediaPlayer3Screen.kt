@@ -51,7 +51,11 @@ object MediaPlayerTab : Tab {
             isAudioPlaying = viewModel.isPlaying,
             audio = viewModel.currentSelectedAudio,
             onStart = { viewModel.onEvent(MusicEvent.PlayPause) },
-            onNext = { viewModel.onEvent(MusicEvent.SeekToNext) }
+            onNext = { viewModel.onEvent(MusicEvent.SeekToNext) },
+            onPrevious = {
+                viewModel.onEvent(MusicEvent.SeekToPrevious)
+            }
+
         )
     }
 }
@@ -63,7 +67,8 @@ fun MediaPlayerScreenContent(
     isAudioPlaying: Boolean,
     audio: AudioFile,
     onStart: () -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    onPrevious : () -> Unit
 ) {
     Scaffold(
         bottomBar = {
@@ -73,7 +78,8 @@ fun MediaPlayerScreenContent(
                 audio = audio,
                 isAudioPlaying = isAudioPlaying,
                 onStart = onStart,
-                onNext = onNext
+                onNext = onNext,
+                onPrevious = onPrevious,
             )
         }
     ) { innerPadding ->
@@ -113,6 +119,7 @@ fun MediaPlayerScreenContentPreview() {
             duration = 300000
         ),
         onStart = {},
-        onNext = {}
+        onNext = {},
+        onPrevious = {}
     )
 }

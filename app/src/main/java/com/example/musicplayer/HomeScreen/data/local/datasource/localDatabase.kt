@@ -1,9 +1,10 @@
 package com.example.musicplayer.HomeScreen.data.local.datasource
 
 import com.example.musicplayer.HomeScreen.data.local.entity.SongEntity
+import kotlinx.coroutines.flow.Flow
 
 interface localDatabase {
-    fun getAllSongPlaylist()
-    fun insertSong(songEntity: SongEntity)
-    fun deleteSong(songEntity: SongEntity)
+    fun getAllSongPlaylist(): Flow<List<SongEntity>>
+    suspend fun insertSong(songEntity: SongEntity)
+    suspend fun deleteSong(songEntity: SongEntity)
 }
