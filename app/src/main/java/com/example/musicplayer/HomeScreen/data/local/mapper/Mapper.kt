@@ -5,7 +5,7 @@ import com.example.musicplayer.HomeScreen.domain.model.AudioFile
 
 fun SongEntity.toAudioFile(): AudioFile {
     return AudioFile(
-        id = this.id,
+        id = this.songId,
         displayName = this.displayName,
         artist = this.artist,
         album = this.album,

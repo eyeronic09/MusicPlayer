@@ -1,6 +1,7 @@
 package com.example.musicplayer.HomeScreen.ui
 
 import android.util.Log
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -8,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,6 +27,8 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.tooling.preview.Preview
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import com.example.musicplayer.HomeScreen.Playlist.domain.model.PlayList
+import com.example.musicplayer.HomeScreen.Playlist.ui.PlayListScreen
 import com.example.musicplayer.HomeScreen.compontent.AudioItem
 import com.example.musicplayer.HomeScreen.compontent.BottomBarPlayer
 import com.example.musicplayer.HomeScreen.domain.model.AudioFile
@@ -98,7 +102,8 @@ fun HomeScreen(
         topBar = {
             Column {
                 TopAppBar(
-                    title = { Text(text = "Music Player") }
+                    title = { Text(text = "Music Player") },
+                    windowInsets = WindowInsets(0, 0, 0, 0)
                 )
                 SecondaryTabRow(
                     selectedTabIndex = pagerState.currentPage,
@@ -129,7 +134,8 @@ fun HomeScreen(
                     onPrevious = onPrevious,
                 )
             }
-        }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         HorizontalPager(
             state = pagerState,
@@ -157,8 +163,7 @@ fun HomeScreen(
                     Text(text = "Album Screen")
                 }
                 HomeTabs.Playlist -> {
-                    // Placeholder for Playlist Screen
-                    Text(text = "Playlist Screen")
+                    PlayListScreen()
                 }
             }
         }

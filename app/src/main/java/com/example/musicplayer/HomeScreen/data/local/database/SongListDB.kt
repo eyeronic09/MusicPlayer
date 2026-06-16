@@ -12,7 +12,7 @@ import com.example.musicplayer.HomeScreen.data.local.entity.SongEntity
 
 @Database(
     entities = [SongEntity::class , PlayListEntity::class , PlaylistSongCrossRef::class],
-    version = 1 ,
+    version = 2 ,
     exportSchema = true
 
 )

@@ -36,7 +36,8 @@ class AppModule : Application() {
                 androidContext(),
                 SONG_DB::class.java,
                 "song_db"
-            ).build()
+            ).fallbackToDestructiveMigration()
+                .build()
         }
 
         // DAO
