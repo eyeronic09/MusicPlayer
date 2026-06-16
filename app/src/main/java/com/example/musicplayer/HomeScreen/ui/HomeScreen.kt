@@ -163,7 +163,7 @@ fun HomeScreen(
                     Text(text = "Album Screen")
                 }
                 HomeTabs.Playlist -> {
-                    PlayListScreen()
+                    PlayListScreen().Content()
                 }
             }
         }

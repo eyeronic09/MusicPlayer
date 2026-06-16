@@ -14,11 +14,12 @@ class ReposistoryImpl (private  val dao: PlaylistDao) : PlaylistRepository {
         return dao.getAllPlaylists().map { entities -> entities.map { it.toDomain() } }
     }
 
-    override suspend fun insertPlaylist(playList: PlayListEntity) {
-        return dao.insertPlaylist(playList)
+
+    override suspend fun insertPlaylist(playList: PlayList) {
+        return dao.insertPlaylist(playList.toEntity())
     }
 
-    override suspend fun deletePlaylist(playList: PlayListEntity) {
-        return dao.deletePlaylist(playList)
+    override suspend fun deletePlaylist(playList: PlayList) {
+        return dao.deletePlaylist(playList.toEntity())
     }
 }

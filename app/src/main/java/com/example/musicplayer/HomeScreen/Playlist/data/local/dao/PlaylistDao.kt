@@ -3,7 +3,6 @@ package com.example.musicplayer.HomeScreen.Playlist.data.local.dao
 import androidx.room.*
 import com.example.musicplayer.HomeScreen.Playlist.data.local.entity.PlayListEntity
 import com.example.musicplayer.HomeScreen.Playlist.data.local.entity.PlaylistSongCrossRef
-import com.example.musicplayer.HomeScreen.Playlist.domain.model.PlayList
 import com.example.musicplayer.HomeScreen.data.local.entity.SongEntity
 import kotlinx.coroutines.flow.Flow
 
