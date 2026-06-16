@@ -5,6 +5,9 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.room.Room
+import com.example.musicplayer.HomeScreen.Playlist.data.local.ReposistoryImpl.ReposistoryImpl as PlaylistRepositoryImpl
+import com.example.musicplayer.HomeScreen.Playlist.domain.reposistory.PlaylistRepository
+import com.example.musicplayer.HomeScreen.Playlist.ui.PlayListScreenViewModel
 import com.example.musicplayer.HomeScreen.data.Reposistory.ReposistoryImpl
 import com.example.musicplayer.HomeScreen.data.local.database.SONG_DB
 import com.example.musicplayer.HomeScreen.domain.reposistory.MusicRepository
@@ -40,7 +43,9 @@ class AppModule : Application() {
         single { get<SONG_DB>().dao() }
         single { get<SONG_DB>().playlistDao() }
 
+        // Repositories
         single<MusicRepository> { ReposistoryImpl(androidContext() , get()) }
+        single<PlaylistRepository> { PlaylistRepositoryImpl(get()) }
         
         single {
             val audioAttributes = AudioAttributes.Builder()
@@ -62,8 +67,13 @@ class AppModule : Application() {
             NotificationManager(androidContext(), get())
         }
         
+        // ViewModels
         viewModel {
             HomeScreenViewModel(get())
+        }
+
+        viewModel {
+            PlayListScreenViewModel(get())
         }
 
         viewModel {
