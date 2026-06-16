@@ -6,11 +6,20 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.tooling.preview.Preview
@@ -21,8 +30,15 @@ import com.example.musicplayer.HomeScreen.compontent.BottomBarPlayer
 import com.example.musicplayer.HomeScreen.domain.model.AudioFile
 import com.example.musicplayer.MusicPlayerScreen.UI.MusicEvent
 import com.example.musicplayer.MusicPlayerScreen.UI.MusicViewModel
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import kotlin.math.floor
+
+enum class HomeTabs(val title: String) {
+    Songs("Songs"),
+    Album("Album"),
+    Playlist("Playlist")
+}
 
 object HomeScreenTab : Tab {
     override val options: TabOptions
@@ -74,32 +90,77 @@ fun HomeScreen(
     onNext: () -> Unit,
     onPrevious: () -> Unit,
 ) {
+    val tabs = HomeTabs.entries
+    val pagerState = rememberPagerState(pageCount = { tabs.size })
+    val coroutineScope = rememberCoroutineScope()
+
     Scaffold(
+        topBar = {
+            Column {
+                TopAppBar(
+                    title = { Text(text = "Music Player") }
+                )
+                SecondaryTabRow(
+                    selectedTabIndex = pagerState.currentPage,
+                ) {
+                    tabs.forEachIndexed { index, tab ->
+                        Tab(
+                            selected = pagerState.currentPage == index,
+                            onClick = {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(index)
+                                }
+                            },
+                            text = { Text(text = tab.title) }
+                        )
+                    }
+                }
+            }
+        },
         bottomBar = {
-            BottomBarPlayer(
-                progress = progress,
-                onProgress = onProgress,
-                audio = currentPlayingAudio,
-                onStart = onStart,
-                onNext = onNext,
-                isAudioPlaying = isAudioPlaying,
-                onPrevious = onPrevious,
-            )
-        }
-    ) { paddingValues ->
-        LazyColumn(
-            contentPadding = paddingValues,
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            itemsIndexed(audiList) { index, audio ->
-                Log.d("HomeScreen", "Rendering index: $index, audio: ${audio.displayName}")
-                AudioItem(
-                    audio = audio,
-                    isSelected = audio.id == currentPlayingAudio.id,
-                    onItemClick = { onItemClick(index) }
+            if (isAudioPlaying) {
+                BottomBarPlayer(
+                    progress = progress,
+                    onProgress = onProgress,
+                    audio = currentPlayingAudio,
+                    onStart = onStart,
+                    onNext = onNext,
+                    isAudioPlaying = isAudioPlaying,
+                    onPrevious = onPrevious,
                 )
             }
-
+        }
+    ) { paddingValues ->
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) { page ->
+            when (tabs[page]) {
+                HomeTabs.Songs -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        itemsIndexed(audiList) { index, audio ->
+                            Log.d("HomeScreen", "Rendering index: $index, audio: ${audio.displayName}")
+                            AudioItem(
+                                audio = audio,
+                                isSelected = audio.id == currentPlayingAudio.id,
+                                onItemClick = { onItemClick(index) }
+                            )
+                        }
+                    }
+                }
+                HomeTabs.Album -> {
+                    // Placeholder for Album Screen
+                    Text(text = "Album Screen")
+                }
+                HomeTabs.Playlist -> {
+                    // Placeholder for Playlist Screen
+                    Text(text = "Playlist Screen")
+                }
+            }
         }
     }
 }
@@ -117,7 +178,7 @@ fun HomeScreenPreview() {
         HomeScreen(
             progress = 0.5f,
             onProgress = {},
-            isAudioPlaying = true,
+            isAudioPlaying = false,
             currentPlayingAudio = mockAudioList[0],
             audiList = mockAudioList,
             onStart = {},

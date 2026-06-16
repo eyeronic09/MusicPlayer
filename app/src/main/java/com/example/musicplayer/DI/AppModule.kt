@@ -38,6 +38,7 @@ class AppModule : Application() {
 
         // DAO
         single { get<SONG_DB>().dao() }
+        single { get<SONG_DB>().playlistDao() }
 
         single<MusicRepository> { ReposistoryImpl(androidContext() , get()) }
         

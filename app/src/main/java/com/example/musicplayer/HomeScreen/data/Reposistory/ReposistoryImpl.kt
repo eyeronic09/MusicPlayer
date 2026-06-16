@@ -60,7 +60,7 @@ class ReposistoryImpl(
 
                         songDao.insertSong(
                             songEntity = SongEntity(
-                                id = id,
+                                songId = id,
                                 albumIdForArt = albumId,
                                 displayName = name,
                                 artist = artist,

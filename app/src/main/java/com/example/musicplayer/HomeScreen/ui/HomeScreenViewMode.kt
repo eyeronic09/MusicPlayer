@@ -40,7 +40,7 @@ class HomeScreenViewModel(private val repository: MusicRepository) : ViewModel()
         viewModelScope.launch {
             _uiState.update { it.copy(Loading = true) }
             try {
-                repository.getAllAudioFilesFromDb().collectLatest { song ->
+                repository.getAllAudioFilesFromDb().collect { song ->
                     _uiState.update {
                         it.copy(
                             SongList = song,
