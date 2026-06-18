@@ -7,29 +7,29 @@ import com.example.musicplayer.HomeScreen.Playlist.domain.model.PlayList
 import com.example.musicplayer.HomeScreen.Playlist.domain.reposistory.PlaylistRepository
 import com.example.musicplayer.HomeScreen.domain.model.AudioFile
 import com.example.musicplayer.HomeScreen.domain.reposistory.MusicRepository
-import com.google.common.base.Objects
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.compose
-import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 data class HomeScreenUIState(
     val SongList : List<AudioFile> = emptyList(),
     val Playlist : List<PlayList> = emptyList(),
+    val selectedAudioId : Int? = null,
+    val selectedPlayList : Int? = null,
     val ERROR: String? = "",
     val Loading: Boolean = false
 
 )
 
+sealed interface HomeEvent {
+    data class selectedSongId(val id : Int) : HomeEvent
+    data class selectedPlayList(val id : Int) : HomeEvent
+    data class AddToPlaylist(val Audio: AudioFile, val playlistId: Long) : HomeEvent
+
+}
 class HomeScreenViewModel(private val repository: MusicRepository , private val playlistRepository: PlaylistRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeScreenUIState>(HomeScreenUIState())
@@ -39,6 +39,7 @@ class HomeScreenViewModel(private val repository: MusicRepository , private val 
         loadSongs()
         loadPlaylist()
     }
+
 
     private fun loadPlaylist() {
         viewModelScope.launch {
@@ -66,6 +67,28 @@ class HomeScreenViewModel(private val repository: MusicRepository , private val 
             } catch (e: Exception) {
                 Log.e("HomeScreenViewModel", "Error loading songs", e)
                 _uiState.update { it.copy(Loading = false, ERROR = e.localizedMessage) }
+            }
+        }
+    }
+
+    fun onEvent(event: HomeEvent) {
+        when (event) {
+            is HomeEvent.selectedSongId -> {
+                _uiState.update {
+                    it.copy(selectedAudioId = event.id)
+                }
+            }
+            is HomeEvent.selectedPlayList -> {
+                _uiState.update {
+                    it.copy(selectedPlayList = event.id)
+                }
+            }
+            is HomeEvent.AddToPlaylist -> {
+                viewModelScope.launch {
+                    playlistRepository.insertSongFromPlaylist(audioFile = event.Audio ,
+                        event.playlistId.toInt()
+                    )
+                }
             }
         }
     }

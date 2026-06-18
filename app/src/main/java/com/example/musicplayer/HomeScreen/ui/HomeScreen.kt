@@ -9,11 +9,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SecondaryTabRow
@@ -83,7 +81,10 @@ object HomeScreenRootScreen : Screen {
 
 }
 @Composable
-fun HomeScreenRoot(viewModel: MusicViewModel = koinViewModel()) {
+fun HomeScreenRoot(
+    viewModel: MusicViewModel = koinViewModel(),
+    homeViewModel: HomeScreenViewModel = koinViewModel()
+) {
     HomeScreen(
         progress = viewModel.progress,
         onProgress = { viewModel.onEvent(MusicEvent.UpdateProgress(it)) },
@@ -94,8 +95,10 @@ fun HomeScreenRoot(viewModel: MusicViewModel = koinViewModel()) {
         onItemClick = { viewModel.onEvent(MusicEvent.SelectedAudioChange(it)) },
         onNext = { viewModel.onEvent(MusicEvent.SeekToNext) },
         onPrevious = { viewModel.onEvent(MusicEvent.SeekToPrevious) },
-        onAddToPlaylist = { viewModel.onEvent(MusicEvent.AddPlaylist(it)) },
-        playList = viewModel.playlistList
+        playList = viewModel.playlistList,
+        onAddToPlaylist = { audio, playlistId ->
+            homeViewModel.onEvent(HomeEvent.AddToPlaylist(audio, playlistId))
+        }
     )
 }
 
@@ -110,23 +113,23 @@ fun HomeScreen(
     playList : List<PlayList>,
     onStart: () -> Unit,
     onItemClick: (Int) -> Unit,
-    onAddToPlaylist: (Int) -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
+    onAddToPlaylist: (AudioFile, Long) -> Unit
 ) {
     val tabs = HomeTabs.entries
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val coroutineScope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
-    var selectedAudioId by remember { mutableStateOf<Int?>(null) }
+    var selectedAudio by remember { mutableStateOf<AudioFile?>(null) }
 
     if (showBottomSheet) {
         PlaylistBottomSheet(
             playlists = playList,
             onPlaylistClick = { playlist ->
-                selectedAudioId?.let { audioId ->
-                    onAddToPlaylist(audioId)
+                selectedAudio?.let { audioId ->
+                    onAddToPlaylist(audioId, playlist.playlistId)
                 }
                 showBottomSheet = false
             },
@@ -192,7 +195,7 @@ fun HomeScreen(
                                 isSelected = audio.id == currentPlayingAudio.id,
                                 onItemClick = { onItemClick(index) },
                                 onAddToPlaylist = {
-                                    selectedAudioId = audio.id.toInt()
+                                    selectedAudio = audio
                                     showBottomSheet = true
                                 }
                             )
@@ -232,7 +235,7 @@ fun HomeScreenPreview() {
             onItemClick = {},
             onNext = {},
             onPrevious = {},
-            onAddToPlaylist = {}
+            onAddToPlaylist = { _, _ -> }
         )
     }
 }

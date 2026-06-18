@@ -23,9 +23,7 @@ import com.example.musicplayer.MusicPlayerScreen.mapper.toMediaItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
@@ -128,15 +126,12 @@ class MusicViewModel(
                         seekPosition = event.newProgress
                     )
                 }
+
                 is MusicEvent.SelectedAudioIndex -> {
                     audioService.onPlayerEvents(
                         PlayerEvent.SelectedAudioChange,
                         selectedAudioIndex = event.index
                     )
-                }
-
-                is MusicEvent.AddPlaylist -> {
-
                 }
             }
         }
@@ -197,7 +192,6 @@ sealed class MusicEvent {
     object Stop : MusicEvent()
     data class SeekTo(val seekto: Float) : MusicEvent()
     data class SelectedAudioIndex(val index: Int) : MusicEvent()
-    data class AddPlaylist(val id : Int) : MusicEvent()
 }
 
 sealed class UiState {
