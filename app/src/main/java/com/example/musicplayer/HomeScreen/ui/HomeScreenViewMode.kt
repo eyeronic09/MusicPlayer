@@ -3,6 +3,8 @@ package com.example.musicplayer.HomeScreen.ui
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.musicplayer.HomeScreen.Playlist.domain.model.PlayList
+import com.example.musicplayer.HomeScreen.Playlist.domain.reposistory.PlaylistRepository
 import com.example.musicplayer.HomeScreen.domain.model.AudioFile
 import com.example.musicplayer.HomeScreen.domain.reposistory.MusicRepository
 import com.google.common.base.Objects
@@ -22,18 +24,30 @@ import kotlinx.coroutines.withContext
 
 data class HomeScreenUIState(
     val SongList : List<AudioFile> = emptyList(),
+    val Playlist : List<PlayList> = emptyList(),
     val ERROR: String? = "",
     val Loading: Boolean = false
 
 )
 
-class HomeScreenViewModel(private val repository: MusicRepository) : ViewModel() {
+class HomeScreenViewModel(private val repository: MusicRepository , private val playlistRepository: PlaylistRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeScreenUIState>(HomeScreenUIState())
     val uiState: StateFlow<HomeScreenUIState> = _uiState.asStateFlow()
 
     init {
         loadSongs()
+        loadPlaylist()
+    }
+
+    private fun loadPlaylist() {
+        viewModelScope.launch {
+                playlistRepository.getAllPlayList().collectLatest { playlist ->
+                    _uiState.update {
+                        it.copy(Playlist = playlist)
+                    }
+            }
+        }
     }
 
     fun loadSongs() {

@@ -13,15 +13,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,6 +38,7 @@ import com.example.musicplayer.HomeScreen.Playlist.domain.model.PlayList
 import com.example.musicplayer.HomeScreen.Playlist.ui.PlayListScreen
 import com.example.musicplayer.HomeScreen.compontent.AudioItem
 import com.example.musicplayer.HomeScreen.compontent.BottomBarPlayer
+import com.example.musicplayer.HomeScreen.compontent.PlaylistBottomSheet
 import com.example.musicplayer.HomeScreen.domain.model.AudioFile
 import com.example.musicplayer.MusicPlayerScreen.UI.MusicEvent
 import com.example.musicplayer.MusicPlayerScreen.UI.MusicViewModel
@@ -87,7 +93,9 @@ fun HomeScreenRoot(viewModel: MusicViewModel = koinViewModel()) {
         onStart = { viewModel.onEvent(MusicEvent.PlayPause) },
         onItemClick = { viewModel.onEvent(MusicEvent.SelectedAudioChange(it)) },
         onNext = { viewModel.onEvent(MusicEvent.SeekToNext) },
-        onPrevious = { viewModel.onEvent(MusicEvent.SeekToPrevious) }
+        onPrevious = { viewModel.onEvent(MusicEvent.SeekToPrevious) },
+        onAddToPlaylist = { viewModel.onEvent(MusicEvent.AddPlaylist(it)) },
+        playList = viewModel.playlistList
     )
 }
 
@@ -99,14 +107,33 @@ fun HomeScreen(
     isAudioPlaying: Boolean,
     currentPlayingAudio: AudioFile,
     audiList: List<AudioFile>,
+    playList : List<PlayList>,
     onStart: () -> Unit,
     onItemClick: (Int) -> Unit,
+    onAddToPlaylist: (Int) -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
 ) {
     val tabs = HomeTabs.entries
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val coroutineScope = rememberCoroutineScope()
+    var showBottomSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
+    var selectedAudioId by remember { mutableStateOf<Int?>(null) }
+
+    if (showBottomSheet) {
+        PlaylistBottomSheet(
+            playlists = playList,
+            onPlaylistClick = { playlist ->
+                selectedAudioId?.let { audioId ->
+                    onAddToPlaylist(audioId)
+                }
+                showBottomSheet = false
+            },
+            onDismissRequest = { showBottomSheet = false },
+            sheetState = sheetState
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -159,11 +186,15 @@ fun HomeScreen(
                         modifier = Modifier.fillMaxSize(),
                     ) {
                         itemsIndexed(audiList) { index, audio ->
-                            Log.d("HomeScreen", "Rendering index: $index, audio: ${audio.displayName}")
+                            Log.d("HomeScreen", "Rendering index: $index, audio: ${audio.id}")
                             AudioItem(
                                 audio = audio,
                                 isSelected = audio.id == currentPlayingAudio.id,
-                                onItemClick = { onItemClick(index) }
+                                onItemClick = { onItemClick(index) },
+                                onAddToPlaylist = {
+                                    selectedAudioId = audio.id.toInt()
+                                    showBottomSheet = true
+                                }
                             )
                         }
                     }
@@ -196,10 +227,12 @@ fun HomeScreenPreview() {
             isAudioPlaying = false,
             currentPlayingAudio = mockAudioList[0],
             audiList = mockAudioList,
+            playList = emptyList(),
             onStart = {},
             onItemClick = {},
             onNext = {},
-            onPrevious = {}
+            onPrevious = {},
+            onAddToPlaylist = {}
         )
     }
 }

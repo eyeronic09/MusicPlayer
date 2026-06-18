@@ -30,7 +30,6 @@ class PlaylistAllSongViewModel(
     private fun loadSongs() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-
         }
     }
 }

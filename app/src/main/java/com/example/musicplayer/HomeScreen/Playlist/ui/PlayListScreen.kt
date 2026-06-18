@@ -111,7 +111,7 @@ fun PlaylistScreen(
                             modifier = Modifier
                                 .padding(16.dp)
                                 .clickable {
-                                    nav?.push(PlaylistAllSong(playlistid = playlist.playlistId.toInt()))
+                                    nav.push(PlaylistAllSong(playlistid = playlist.playlistId.toInt()))
                                 }
                         )
                     }

@@ -2,6 +2,7 @@ package com.example.musicplayer.MusicPlayerScreen.UI
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -9,12 +10,15 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.SavedStateHandleSaveableApi
 import androidx.lifecycle.viewmodel.compose.saveable
 import androidx.media3.common.MediaItem
+import com.example.musicplayer.HomeScreen.Playlist.domain.model.PlayList
+import com.example.musicplayer.HomeScreen.Playlist.domain.reposistory.PlaylistRepository
 import com.example.musicplayer.HomeScreen.domain.model.AudioFile
 import com.example.musicplayer.HomeScreen.domain.reposistory.MusicRepository
 import com.example.musicplayer.MusicPlayerScreen.Service.AudioServiceHandler
 import com.example.musicplayer.MusicPlayerScreen.Service.AudioState
 import com.example.musicplayer.MusicPlayerScreen.Service.JetAudioService
 import com.example.musicplayer.MusicPlayerScreen.Service.PlayerEvent
+import com.example.musicplayer.MusicPlayerScreen.Service.PlayerEvent.*
 import com.example.musicplayer.MusicPlayerScreen.mapper.toMediaItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,16 +42,18 @@ private val audioDummy = AudioFile(
 class MusicViewModel(
     private val audioService: AudioServiceHandler,
     private val repository: MusicRepository,
+    private val playlist : PlaylistRepository,
     private val context: Context,
     saveStateHandler: SavedStateHandle
 ) : ViewModel() {
 
-    var duration by saveStateHandler.saveable { mutableStateOf(0L) }
+    var duration by saveStateHandler.saveable { mutableLongStateOf(0L) }
     var progress by saveStateHandler.saveable { mutableStateOf(0f) }
     var isPlaying by saveStateHandler.saveable { mutableStateOf(false) }
     var currentSelectedAudio by saveStateHandler.saveable { mutableStateOf(audioDummy) }
     var audioList by saveStateHandler.saveable { mutableStateOf(listOf<AudioFile>()) }
     var albumIdForArt by saveStateHandler.saveable { mutableStateOf("") }
+    var playlistList by saveStateHandler.saveable { mutableStateOf(listOf<PlayList>()) }
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Initial)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -57,6 +63,7 @@ class MusicViewModel(
             repository.insertMediaStoreToDB()
         }
         loadAudioData()
+        loadPlaylistData()
         startService()
         viewModelScope.launch {
             audioService.playerState.collectLatest { state ->
@@ -110,7 +117,7 @@ class MusicViewModel(
 
                 is MusicEvent.UpdateProgress -> {
                     audioService.onPlayerEvents(
-                        PlayerEvent.UpdateProgress(event.newProgress)
+                        UpdateProgress(event.newProgress)
                     )
                     progress = event.newProgress
                 }
@@ -126,6 +133,10 @@ class MusicViewModel(
                         PlayerEvent.SelectedAudioChange,
                         selectedAudioIndex = event.index
                     )
+                }
+
+                is MusicEvent.AddPlaylist -> {
+
                 }
             }
         }
@@ -154,6 +165,14 @@ class MusicViewModel(
         }
     }
 
+    private fun loadPlaylistData() {
+        viewModelScope.launch {
+            playlist.getAllPlayList().collectLatest { playlists ->
+                this@MusicViewModel.playlistList = playlists
+            }
+        }
+    }
+
     private fun setMediaItems(audioList: List<MediaItem>) {
         audioService.setMediaItems(
             mediaItems = audioList
@@ -178,6 +197,7 @@ sealed class MusicEvent {
     object Stop : MusicEvent()
     data class SeekTo(val seekto: Float) : MusicEvent()
     data class SelectedAudioIndex(val index: Int) : MusicEvent()
+    data class AddPlaylist(val id : Int) : MusicEvent()
 }
 
 sealed class UiState {

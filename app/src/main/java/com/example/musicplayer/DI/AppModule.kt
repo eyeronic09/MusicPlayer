@@ -71,7 +71,7 @@ class AppModule : Application() {
         
         // ViewModels
         viewModel {
-            HomeScreenViewModel(get())
+            HomeScreenViewModel(get() , get())
         }
 
         viewModel {
@@ -87,7 +87,8 @@ class AppModule : Application() {
                 audioService = get(),
                 repository = get(),
                 context = androidContext(),
-                saveStateHandler = get()
+                saveStateHandler = get(),
+                playlist = get(),
             )
         }
     }
