@@ -25,6 +25,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.tooling.preview.Preview
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import com.example.musicplayer.HomeScreen.Playlist.domain.model.PlayList
@@ -62,10 +64,18 @@ object HomeScreenTab : Tab {
 
     @Composable
     override fun Content() {
-        HomeScreenRoot()
+        Navigator(
+            HomeScreenRootScreen)
     }
 }
 
+object HomeScreenRootScreen : Screen {
+    @Composable
+    override fun Content() {
+        HomeScreenRoot()
+    }
+
+}
 @Composable
 fun HomeScreenRoot(viewModel: MusicViewModel = koinViewModel()) {
     HomeScreen(

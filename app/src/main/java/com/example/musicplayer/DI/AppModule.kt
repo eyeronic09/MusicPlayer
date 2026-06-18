@@ -5,9 +5,10 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.room.Room
-import com.example.musicplayer.HomeScreen.Playlist.data.local.ReposistoryImpl.ReposistoryImpl as PlaylistRepositoryImpl
+import com.example.musicplayer.HomeScreen.Playlist.data.local.ReposistoryImpl.RepositoryImpl as PlaylistRepositoryImpl
 import com.example.musicplayer.HomeScreen.Playlist.domain.reposistory.PlaylistRepository
 import com.example.musicplayer.HomeScreen.Playlist.ui.PlayListScreenViewModel
+import com.example.musicplayer.HomeScreen.Playlist.ui.PlaylistAllSongViewModel
 import com.example.musicplayer.HomeScreen.data.Reposistory.ReposistoryImpl
 import com.example.musicplayer.HomeScreen.data.local.database.SONG_DB
 import com.example.musicplayer.HomeScreen.domain.reposistory.MusicRepository
@@ -75,6 +76,10 @@ class AppModule : Application() {
 
         viewModel {
             PlayListScreenViewModel(get())
+        }
+
+        viewModel { parameters ->
+            PlaylistAllSongViewModel(playlistId = parameters.get(), playlistRepository = get())
         }
 
         viewModel {

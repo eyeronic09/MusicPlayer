@@ -17,6 +17,7 @@ interface SongDao {
     suspend fun deleteDelete(songEntity: SongEntity)
 
     @Query(value = "Select * FROM song_DB")
+
     fun getAllSong() : Flow<List<SongEntity>>
 
 }

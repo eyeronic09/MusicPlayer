@@ -1,5 +1,6 @@
 package com.example.musicplayer.HomeScreen.Playlist.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +23,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import org.koin.androidx.compose.koinViewModel
 
 class PlayListScreen : Screen {
@@ -48,6 +51,8 @@ fun PlaylistScreen(
     uiState: PlayListScreenUIState,
     onEvent: (PlaylistEvent) -> Unit
 ) {
+
+    val nav = LocalNavigator.currentOrThrow
 
     if (uiState.showPopup) {
         AlertDialog(
@@ -103,7 +108,11 @@ fun PlaylistScreen(
                     items(uiState.playList) { playlist ->
                         Text(
                             text = playlist.playListName,
-                            modifier = Modifier.padding(16.dp)
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .clickable {
+                                    nav?.push(PlaylistAllSong(playlistid = playlist.playlistId.toInt()))
+                                }
                         )
                     }
                 }
