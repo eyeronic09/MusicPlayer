@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.musicplayer.HomeScreen.Playlist.domain.model.PlayList
 import com.example.musicplayer.HomeScreen.Playlist.domain.reposistory.PlaylistRepository
+import com.example.musicplayer.HomeScreen.domain.model.AudioFile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,6 +21,7 @@ data class PlayListScreenUIState(
 
 )
 sealed interface PlaylistEvent {
+
     data class PopUp(val show : Boolean) : PlaylistEvent
     object CreatePlayList : PlaylistEvent
     data class OnNameChange(val name: String) : PlaylistEvent
@@ -35,6 +37,8 @@ class PlayListScreenViewModel (
         loadPlaylist()
     }
 
+
+
     fun onEvent(event: PlaylistEvent){
         when (event){
             is PlaylistEvent.PopUp -> {
@@ -48,12 +52,14 @@ class PlayListScreenViewModel (
             is PlaylistEvent.OnNameChange -> {
                 _uiState.update { it.copy(playListName = event.name) }
             }
+
         }
     }
 
     private fun popUp(show: Boolean){
         _uiState.update { it.copy(showPopup = show , playListName = "") }
     }
+
 
     private fun CreatePlaylist(){
         viewModelScope.launch {

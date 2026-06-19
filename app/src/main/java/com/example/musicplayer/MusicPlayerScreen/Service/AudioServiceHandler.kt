@@ -32,10 +32,13 @@ class AudioServiceHandler(
         exoPlayer.prepare()
     }
 
-    fun setMediaItems(mediaItems: List<MediaItem>) {
+    fun setMediaItems(mediaItems: List<MediaItem> , playWhenReady : Boolean = false) {
         Log.d("AudioServiceHandler", "Setting ${mediaItems.size} media items")
         exoPlayer.setMediaItems(mediaItems)
         exoPlayer.prepare()
+        if (playWhenReady){
+            exoPlayer.play()
+        }
     }
 
     fun onPlayerEvents(

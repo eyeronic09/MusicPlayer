@@ -16,7 +16,7 @@ data class PlaylistAllSongUIState(
 )
 
 class PlaylistAllSongViewModel(
-    private val playlistId : Long,
+    playlistId : Long,
     private val playlistRepository: PlaylistRepository
 ) : ViewModel() {
 

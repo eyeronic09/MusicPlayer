@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -26,6 +27,9 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.example.musicplayer.HomeScreen.ui.HomeScreenViewModel
+import com.example.musicplayer.MusicPlayerScreen.UI.MusicEvent
+import com.example.musicplayer.MusicPlayerScreen.UI.MusicViewModel
 import org.koin.androidx.compose.koinViewModel
 
 class PlayListScreen : Screen {
@@ -38,11 +42,12 @@ class PlayListScreen : Screen {
 }
 
 @Composable
-fun PlayListScreenRoot(viewModel: PlayListScreenViewModel = koinViewModel()) {
+fun PlayListScreenRoot(viewModel: PlayListScreenViewModel = koinViewModel() , v2 : MusicViewModel = koinViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     PlaylistScreen(
         uiState = uiState,
-        onEvent = viewModel::onEvent
+        onEvent = viewModel::onEvent,
+        onMusicEvent = v2::onEvent
     )
 }
 
@@ -50,7 +55,8 @@ fun PlayListScreenRoot(viewModel: PlayListScreenViewModel = koinViewModel()) {
 @Composable
 fun PlaylistScreen(
     uiState: PlayListScreenUIState,
-    onEvent: (PlaylistEvent) -> Unit
+    onEvent: (PlaylistEvent) -> Unit,
+    onMusicEvent: (MusicEvent) -> Unit
 ) {
 
     val nav = LocalNavigator.currentOrThrow
@@ -116,6 +122,12 @@ fun PlaylistScreen(
                                     nav.push(PlaylistAllSong(playlist = playlist.playlistId))
                                 }
                         )
+                        Button(onClick = {
+                            onMusicEvent(MusicEvent.PlayPlaylist(playlist.playlistId))
+                            Log.d("PlaylistScreen", "Playlist  of Play button ID: ${playlist.playlistId}")
+                        }) {
+                            Text(text = "play")
+                        }
 
                     }
                 }

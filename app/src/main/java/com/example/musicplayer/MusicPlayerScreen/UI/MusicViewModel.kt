@@ -2,6 +2,7 @@ package com.example.musicplayer.MusicPlayerScreen.UI
 
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
@@ -92,23 +94,23 @@ class MusicViewModel(
     fun onEvent(event: MusicEvent) {
         viewModelScope.launch {
             when (event) {
-                MusicEvent.Backward -> audioService.onPlayerEvents(PlayerEvent.Backward)
-                MusicEvent.Forward -> audioService.onPlayerEvents(PlayerEvent.Forward)
-                MusicEvent.SeekToNext -> audioService.onPlayerEvents(PlayerEvent.SeekToNext)
-                MusicEvent.SeekToPrevious -> audioService.onPlayerEvents(PlayerEvent.SeekToPrevious)
-                MusicEvent.PlayPause -> audioService.onPlayerEvents(PlayerEvent.PlayPause)
-                MusicEvent.Stop -> audioService.onPlayerEvents(PlayerEvent.Stop)
+                MusicEvent.Backward -> audioService.onPlayerEvents(Backward)
+                MusicEvent.Forward -> audioService.onPlayerEvents(Forward)
+                MusicEvent.SeekToNext -> audioService.onPlayerEvents(SeekToNext)
+                MusicEvent.SeekToPrevious -> audioService.onPlayerEvents(SeekToPrevious)
+                MusicEvent.PlayPause -> audioService.onPlayerEvents(PlayPause)
+                MusicEvent.Stop -> audioService.onPlayerEvents(Stop)
 
                 is MusicEvent.SeekTo -> {
                     audioService.onPlayerEvents(
-                        PlayerEvent.SeekTo,
+                        SeekTo,
                         seekPosition = (duration * event.seekto).toLong()
                     )
                 }
 
                 is MusicEvent.SelectedAudioChange -> {
                     audioService.onPlayerEvents(
-                        PlayerEvent.SelectedAudioChange,
+                        SelectedAudioChange,
                         selectedAudioIndex = event.index
                     )
                 }
@@ -122,21 +124,38 @@ class MusicViewModel(
 
                 is MusicEvent.LongUpdateProgress -> {
                     audioService.onPlayerEvents(
-                        PlayerEvent.SeekTo,
+                        SeekTo,
                         seekPosition = event.newProgress
                     )
                 }
 
                 is MusicEvent.SelectedAudioIndex -> {
                     audioService.onPlayerEvents(
-                        PlayerEvent.SelectedAudioChange,
+                        SelectedAudioChange,
                         selectedAudioIndex = event.index
                     )
+                }
+
+                is MusicEvent.PlayPlaylist -> {
+                    PlayPlaylist(event.playlistid)
                 }
             }
         }
     }
 
+    private fun PlayPlaylist(id : Long  ){
+        viewModelScope.launch {
+            playlist.getSongsInPlaylist(id).collect{
+                this@MusicViewModel.audioList = it
+                val mediaItems = it.map { audioFile -> audioFile.toMediaItem() }
+                Log.d("mediaItems" , mediaItems.toString())
+                setMediaItems(
+                    mediaItems,
+                    playWhenReady = true,
+                )
+            }
+        }
+    }
     private fun calculateProgress(currentProgress: Long) {
         progress = if (currentProgress > 0 && duration > 0) {
             (currentProgress.toFloat() / duration.toFloat())
@@ -155,7 +174,7 @@ class MusicViewModel(
             repository.getAllAudioFilesFromDb().collectLatest { audioFiles ->
                 this@MusicViewModel.audioList = audioFiles
                 val mediaItems = audioFiles.map { it.toMediaItem() }
-                setMediaItems(mediaItems)
+                setMediaItems(mediaItems , playWhenReady = false)
             }
         }
     }
@@ -168,9 +187,11 @@ class MusicViewModel(
         }
     }
 
-    private fun setMediaItems(audioList: List<MediaItem>) {
+    private fun setMediaItems(audioList: List<MediaItem> ,playWhenReady: Boolean = false) {
         audioService.setMediaItems(
-            mediaItems = audioList
+            mediaItems = audioList ,
+            playWhenReady = playWhenReady
+
         )
     }
 
@@ -181,6 +202,8 @@ class MusicViewModel(
 }
 
 sealed class MusicEvent {
+
+    data class PlayPlaylist(val playlistid : Long) : MusicEvent()
     object PlayPause : MusicEvent()
     data class SelectedAudioChange(val index: Int) : MusicEvent()
     object Backward : MusicEvent()
