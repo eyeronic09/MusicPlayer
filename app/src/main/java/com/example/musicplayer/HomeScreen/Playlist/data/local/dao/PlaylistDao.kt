@@ -28,10 +28,13 @@ interface PlaylistDao {
     @Transaction
     @Query("SELECT * FROM playlist_table WHERE playlistId = :playlistId")
     fun getSongsOfPlaylist(playlistId: Long): Flow<PlaylistWithSongs>
+
+    @Query(value = "SELECT * FROM song_DB INNER JOIN playlistsongcrossref ON song_DB.songId = playlistsongcrossref.songId WHERE playlistsongcrossref.playlistId = :playlistId")
+    fun getSongsInPlaylist(playlistId: Long): Flow<List<SongEntity>>
 }
 
 
-// this is associate entity
+// this is associate entityb
 data class PlaylistWithSongs(
     @Embedded val playlist: PlayListEntity,
     @Relation(

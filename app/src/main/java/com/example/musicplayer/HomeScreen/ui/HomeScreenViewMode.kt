@@ -86,7 +86,7 @@ class HomeScreenViewModel(private val repository: MusicRepository , private val 
             is HomeEvent.AddToPlaylist -> {
                 viewModelScope.launch {
                     playlistRepository.insertSongFromPlaylist(audioFile = event.Audio ,
-                        event.playlistId.toInt()
+                        event.playlistId
                     )
                 }
             }

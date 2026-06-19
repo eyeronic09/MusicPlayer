@@ -16,20 +16,28 @@ data class PlaylistAllSongUIState(
 )
 
 class PlaylistAllSongViewModel(
-    private val playlistRepository: PlaylistRepository,
-    private val playlistId : Int
+    private val playlistId : Long,
+    private val playlistRepository: PlaylistRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PlaylistAllSongUIState())
     val uiState: StateFlow<PlaylistAllSongUIState> = _uiState.asStateFlow()
 
     init {
-        loadSongs()
+        loadSongs(id = playlistId)
     }
 
-    private fun loadSongs() {
+    private fun loadSongs(id : Long) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
+            playlistRepository.getSongsInPlaylist(id).collect { songs ->
+                _uiState.update { it ->
+                    it.copy(
+                        allSongs = songs,
+                        isLoading = false
+                    )
+                }
+            }
         }
     }
 }

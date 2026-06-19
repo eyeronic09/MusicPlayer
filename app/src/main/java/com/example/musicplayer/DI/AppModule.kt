@@ -79,16 +79,19 @@ class AppModule : Application() {
         }
 
         viewModel { parameters ->
-            PlaylistAllSongViewModel(playlistId = parameters.get(), playlistRepository = get())
+            PlaylistAllSongViewModel(
+                playlistId = parameters.get(),
+                playlistRepository = get()
+            )
         }
 
         viewModel {
             MusicViewModel(
                 audioService = get(),
                 repository = get(),
-                context = androidContext(),
-                saveStateHandler = get(),
                 playlist = get(),
+                context = androidContext(),
+                saveStateHandler = get()
             )
         }
     }

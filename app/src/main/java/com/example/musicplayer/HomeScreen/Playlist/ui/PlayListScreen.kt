@@ -1,5 +1,6 @@
 package com.example.musicplayer.HomeScreen.Playlist.ui
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -111,15 +112,15 @@ fun PlaylistScreen(
                             modifier = Modifier
                                 .padding(16.dp)
                                 .clickable {
-                                    nav.push(PlaylistAllSong(playlistid = playlist.playlistId.toInt()))
+                                    Log.d("PlaylistScreen", "Playlist ID: ${playlist.playlistId}")
+                                    nav.push(PlaylistAllSong(playlist = playlist.playlistId))
                                 }
                         )
+
                     }
                 }
             }
-            uiState.playList.isEmpty() -> {
-                Text(text = "text")
-            }
+
 
         }
     }
