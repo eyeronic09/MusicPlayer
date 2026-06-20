@@ -193,7 +193,7 @@ class MusicViewModel(
         )
     }
     private fun onlyOnMediaItem(audio : MediaItem){
-        audioService.onPlayerEvents(PlayerEvent.onAudioSongPlay(audio))
+        audioService.onPlayerEvents(OnAudioSongPlay(audio))
     }
 
     private fun startService() {

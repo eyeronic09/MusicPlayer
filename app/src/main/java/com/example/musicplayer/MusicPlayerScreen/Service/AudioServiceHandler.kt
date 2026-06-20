@@ -13,6 +13,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 class AudioServiceHandler(
     private val exoPlayer: ExoPlayer
@@ -66,6 +67,7 @@ class AudioServiceHandler(
                     exoPlayer.playWhenReady = true
                     exoPlayer.prepare() // Ensure preparedL
                     exoPlayer.play()
+                    _playerState.value = CurrentPlaying(mediaItem)
                     _playerState.value = Playing(isPlaying = true)
                     startProgressUpdate()
                 }
@@ -81,6 +83,7 @@ class AudioServiceHandler(
                 exoPlayer.setMediaItem(playerEvent.mediaItem)
                 exoPlayer.prepare()
                 exoPlayer.play()
+                _playerState.value = CurrentPlaying(playerEvent.mediaItem)
                 _playerState.value = Playing(isPlaying = true)
                 startProgressUpdate()
             }
@@ -131,7 +134,7 @@ class AudioServiceHandler(
                 if (exoPlayer.isPlaying) {
                     _playerState.value = Progress(exoPlayer.currentPosition)
                 }
-                delay(1000)
+                delay(1000.milliseconds)
             }
         }
     }
