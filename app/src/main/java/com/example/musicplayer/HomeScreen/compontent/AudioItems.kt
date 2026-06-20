@@ -44,8 +44,8 @@ import java.util.Locale
 fun AudioItem(
     audio: AudioFile,
     isSelected: Boolean,
-    onItemClick: () -> Unit,
-    onAddToPlaylist: () -> Unit = {},
+    onItemClick: () -> Unit = {},
+    onAddToPlaylist: (() -> Unit)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -109,13 +109,15 @@ fun AudioItem(
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {
-                    DropdownMenuItem(
-                        text = { Text("Add to Playlist") },
-                        onClick = {
-                            onAddToPlaylist()
-                            expanded = false
-                        }
-                    )
+                    if (onAddToPlaylist != null) {
+                        DropdownMenuItem(
+                            text = { Text("Add to Playlist") },
+                            onClick = {
+                                onAddToPlaylist()
+                                expanded = false
+                            }
+                        )
+                    }
                 }
             }
         }

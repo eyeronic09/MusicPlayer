@@ -2,7 +2,10 @@ package com.example.musicplayer.MusicPlayerScreen.UI
 
 import android.content.Context
 import android.content.Intent
+import android.provider.MediaStore
 import android.util.Log
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
@@ -27,7 +30,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.concurrent.TimeUnit
 
 private val audioDummy = AudioFile(
     id = -1,
@@ -46,9 +48,8 @@ class MusicViewModel(
     private val context: Context,
     saveStateHandler: SavedStateHandle
 ) : ViewModel() {
-
     var duration by saveStateHandler.saveable { mutableLongStateOf(0L) }
-    var progress by saveStateHandler.saveable { mutableStateOf(0f) }
+    var progress by saveStateHandler.saveable { mutableFloatStateOf(0f) }
     var isPlaying by saveStateHandler.saveable { mutableStateOf(false) }
     var currentSelectedAudio by saveStateHandler.saveable { mutableStateOf(audioDummy) }
     var audioList by saveStateHandler.saveable { mutableStateOf(listOf<AudioFile>()) }
@@ -70,10 +71,10 @@ class MusicViewModel(
                 when (state) {
                     is AudioState.Buffering -> calculateProgress(state.progress)
                     is AudioState.CurrentPlaying -> {
-                        if (audioList.isNotEmpty() && state.mediaItemIndex >= 0 && state.mediaItemIndex < audioList.size) {
-                            currentSelectedAudio = audioList[state.mediaItemIndex]
+                        val song = audioList.find { it.id.toString() == state.mediaItems?.mediaId }
+                        if (song != null) {
+                            currentSelectedAudio = song
                         }
-
                     }
                     AudioState.Initial -> _uiState.value = UiState.Initial
                     is AudioState.Playing -> {
@@ -137,7 +138,11 @@ class MusicViewModel(
                 }
 
                 is MusicEvent.PlayPlaylist -> {
-                    PlayPlaylist(event.playlistid)
+                    PlayPlaylist(event.playlist)
+                }
+
+                is MusicEvent.PlayOnlySong -> {
+                    onlyOnMediaItem(audio = event.audio.toMediaItem())
                 }
             }
         }
@@ -160,13 +165,6 @@ class MusicViewModel(
         progress = if (currentProgress > 0 && duration > 0) {
             (currentProgress.toFloat() / duration.toFloat())
         } else 0f
-    }
-
-    fun formatDuration(duration: Long): String {
-        val minutes = TimeUnit.MINUTES.convert(duration, TimeUnit.MILLISECONDS)
-        val seconds = TimeUnit.SECONDS.convert(duration, TimeUnit.MILLISECONDS) -
-                TimeUnit.SECONDS.convert(minutes, TimeUnit.MINUTES)
-        return String.format("%02d:%02d", minutes, seconds)
     }
 
     private fun loadAudioData() {
@@ -194,6 +192,9 @@ class MusicViewModel(
 
         )
     }
+    private fun onlyOnMediaItem(audio : MediaItem){
+        audioService.onPlayerEvents(PlayerEvent.onAudioSongPlay(audio))
+    }
 
     private fun startService() {
         val intent = Intent(context, JetAudioService::class.java)
@@ -203,7 +204,8 @@ class MusicViewModel(
 
 sealed class MusicEvent {
 
-    data class PlayPlaylist(val playlistid : Long) : MusicEvent()
+    data class PlayPlaylist(val playlist : Long) : MusicEvent()
+    data class PlayOnlySong(val audio: AudioFile) : MusicEvent()
     object PlayPause : MusicEvent()
     data class SelectedAudioChange(val index: Int) : MusicEvent()
     object Backward : MusicEvent()

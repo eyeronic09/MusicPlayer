@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 class AudioServiceHandler(
     private val exoPlayer: ExoPlayer
 ) : Player.Listener {
-    private val _playerState = MutableStateFlow<AudioState>(AudioState.Initial)
+    private val _playerState = MutableStateFlow<AudioState>(Initial)
     val playerState = _playerState.asStateFlow()
 
     private var job: Job? = null
@@ -76,6 +76,14 @@ class AudioServiceHandler(
                     exoPlayer.seekTo((exoPlayer.duration * playerEvent.newProgress).toLong())
                 }
             }
+
+            is PlayerEvent.OnAudioSongPlay -> {
+                exoPlayer.setMediaItem(playerEvent.mediaItem)
+                exoPlayer.prepare()
+                exoPlayer.play()
+                _playerState.value = Playing(isPlaying = true)
+                startProgressUpdate()
+            }
         }
     }
 
@@ -99,7 +107,7 @@ class AudioServiceHandler(
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         Log.d("AudioServiceHandler", "Is Playing: $isPlaying")
         _playerState.value = Playing(isPlaying)
-        _playerState.value = CurrentPlaying(exoPlayer.currentMediaItemIndex)
+        _playerState.value = CurrentPlaying(exoPlayer.currentMediaItem)
         if (isPlaying) {
             startProgressUpdate()
         } else {
@@ -112,6 +120,10 @@ class AudioServiceHandler(
         Log.e("AudioServiceHandler", "Failing URI: ${exoPlayer.currentMediaItem?.localConfiguration?.uri}")
     }
 
+    override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+        super.onMediaItemTransition(mediaItem, reason)
+        _playerState.value = CurrentPlaying(mediaItem)
+    }
     private fun startProgressUpdate() {
         job?.cancel()
         job = scope.launch {
@@ -152,6 +164,7 @@ sealed class PlayerEvent {
     object SeekTo : PlayerEvent()
     object Stop : PlayerEvent()
     data class UpdateProgress(val newProgress: Float) : PlayerEvent()
+    data class OnAudioSongPlay(val mediaItem : MediaItem) : PlayerEvent()
 }
 
 sealed class AudioState {
@@ -160,5 +173,5 @@ sealed class AudioState {
     data class Progress(val progress: Long) : AudioState()
     data class Buffering(val progress: Long) : AudioState()
     data class Playing(val isPlaying: Boolean) : AudioState()
-    data class CurrentPlaying(val mediaItemIndex: Int) : AudioState()
+    data class CurrentPlaying(val mediaItems: MediaItem? ) : AudioState()
 }

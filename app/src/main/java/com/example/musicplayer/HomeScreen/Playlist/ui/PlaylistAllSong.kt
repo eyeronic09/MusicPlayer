@@ -19,7 +19,10 @@ import org.koin.core.parameter.parametersOf
 
 
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.musicplayer.HomeScreen.compontent.AudioItem
 import com.example.musicplayer.HomeScreen.domain.model.AudioFile
+import com.example.musicplayer.MusicPlayerScreen.UI.MusicEvent
+import com.example.musicplayer.MusicPlayerScreen.UI.MusicViewModel
 import com.example.musicplayer.ui.theme.MusicPlayerTheme
 
 class PlaylistAllSong(val playlist: Long = -1L) : Screen {
@@ -42,7 +45,10 @@ fun PlayListAllSongRoot(id: Long) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlayListAllSongContent(uiState: PlaylistAllSongUIState) {
+fun PlayListAllSongContent(uiState: PlaylistAllSongUIState , viewModel: MusicViewModel = koinViewModel()) {
+    val onEvent = viewModel::onEvent
+
+
     Scaffold (
         topBar = {
             TopAppBar(
@@ -56,7 +62,13 @@ fun PlayListAllSongContent(uiState: PlaylistAllSongUIState) {
                 .padding(paddingValues)
         ) {
             items(uiState.allSongs) { song ->
-                Text(text = song.displayName)
+                AudioItem(
+                    audio = song,
+                    onItemClick = {
+                        onEvent(MusicEvent.PlayOnlySong(audio = song))
+                    },
+                    isSelected = song.id == viewModel.currentSelectedAudio.id
+                )
             }
         }
     }
