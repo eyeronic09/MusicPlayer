@@ -7,8 +7,10 @@ import com.example.musicplayer.HomeScreen.Playlist.domain.model.PlayList
 import com.example.musicplayer.HomeScreen.Playlist.domain.reposistory.PlaylistRepository
 import com.example.musicplayer.HomeScreen.domain.model.AudioFile
 import com.example.musicplayer.HomeScreen.domain.reposistory.MusicRepository
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
@@ -21,19 +23,25 @@ data class HomeScreenUIState(
     val selectedPlayList : Int? = null,
     val ERROR: String? = "",
     val Loading: Boolean = false
-
 )
 
+
+sealed interface HomeUiEffect {
+    data class showToast(val message : String) : HomeUiEffect
+}
 sealed interface HomeEvent {
     data class selectedSongId(val id : Int) : HomeEvent
     data class selectedPlayList(val id : Int) : HomeEvent
     data class AddToPlaylist(val Audio: AudioFile, val playlistId: Long) : HomeEvent
-
 }
 class HomeScreenViewModel(private val repository: MusicRepository , private val playlistRepository: PlaylistRepository) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<HomeScreenUIState>(HomeScreenUIState())
+    private val _uiState = MutableStateFlow(HomeScreenUIState())
     val uiState: StateFlow<HomeScreenUIState> = _uiState.asStateFlow()
+
+    private val _uiEffect = MutableSharedFlow<HomeUiEffect>()
+    val uiEffect = _uiEffect.asSharedFlow()
+
 
     init {
         loadSongs()
@@ -88,6 +96,7 @@ class HomeScreenViewModel(private val repository: MusicRepository , private val 
                     playlistRepository.insertSongFromPlaylist(audioFile = event.Audio ,
                         event.playlistId
                     )
+                    _uiEffect.emit(HomeUiEffect.showToast("Added  to playlist"))
                 }
             }
         }

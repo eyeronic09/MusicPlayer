@@ -29,10 +29,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.musicplayer.HomeScreen.domain.model.AudioFile
 import com.example.musicplayer.R
+import com.example.musicplayer.ui.theme.MusicPlayerTheme
 
 @Composable
 fun ArtistInfo(
@@ -139,6 +141,32 @@ fun MediaPlayerController(
                 onNext()
             },
             contentDescription = null
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MediaPlayerControllerPlayingPreview() {
+    MusicPlayerTheme {
+        MediaPlayerController(
+            isAudioPlaying = true,
+            onStart = {},
+            onNext = {},
+            onPrevious = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MediaPlayerControllerPausedPreview() {
+    MusicPlayerTheme {
+        MediaPlayerController(
+            isAudioPlaying = false,
+            onStart = {},
+            onNext = {},
+            onPrevious = {}
         )
     }
 }

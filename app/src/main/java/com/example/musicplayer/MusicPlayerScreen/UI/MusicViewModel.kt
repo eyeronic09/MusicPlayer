@@ -2,9 +2,7 @@ package com.example.musicplayer.MusicPlayerScreen.UI
 
 import android.content.Context
 import android.content.Intent
-import android.provider.MediaStore
 import android.util.Log
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -14,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.SavedStateHandleSaveableApi
 import androidx.lifecycle.viewmodel.compose.saveable
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import com.example.musicplayer.HomeScreen.Playlist.domain.model.PlayList
 import com.example.musicplayer.HomeScreen.Playlist.domain.reposistory.PlaylistRepository
 import com.example.musicplayer.HomeScreen.domain.model.AudioFile
@@ -28,7 +27,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 private val audioDummy = AudioFile(
@@ -56,6 +54,7 @@ class MusicViewModel(
     var audioList by saveStateHandler.saveable { mutableStateOf(listOf<AudioFile>()) }
     var albumIdForArt by saveStateHandler.saveable { mutableStateOf("") }
     var playlistList by saveStateHandler.saveable { mutableStateOf(listOf<PlayList>()) }
+    var repeatMode by saveStateHandler.saveable { mutableStateOf(value = Player.REPEAT_MODE_OFF) }
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Initial)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -88,6 +87,10 @@ class MusicViewModel(
                         duration = state.duration
                         _uiState.value = UiState.Ready
                     }
+
+                    is AudioState.RepeatModeChanged -> {
+                        repeatMode = state.repeatModeChanged
+                    }
                 }
             }
         }
@@ -102,6 +105,7 @@ class MusicViewModel(
                 MusicEvent.SeekToPrevious -> audioService.onPlayerEvents(SeekToPrevious)
                 MusicEvent.PlayPause -> audioService.onPlayerEvents(PlayPause)
                 MusicEvent.Stop -> audioService.onPlayerEvents(Stop)
+
 
                 is MusicEvent.SeekTo -> {
                     audioService.onPlayerEvents(
@@ -154,6 +158,10 @@ class MusicViewModel(
                     this@MusicViewModel.audioId = song.id.toInt()
                     this@MusicViewModel.currentSelectedAudio = song
                     onlyOnMediaItem(audio = event.audio.toMediaItem())
+                }
+
+                MusicEvent.ToggleRepeat -> {
+                    audioService.onPlayerEvents(PlayerEvent.ToggleRepeat)
                 }
             }
         }
@@ -239,6 +247,7 @@ sealed class MusicEvent {
     data class PlayPlaylist(val playlist : Long) : MusicEvent()
     data class ShufflePlaylist(val playlist: Long) : MusicEvent()
     data class PlayOnlySong(val audio: AudioFile) : MusicEvent()
+    object ToggleRepeat : MusicEvent()
     object PlayPause : MusicEvent()
     data class SelectedAudioChange(val index: Int) : MusicEvent()
     object Backward : MusicEvent()

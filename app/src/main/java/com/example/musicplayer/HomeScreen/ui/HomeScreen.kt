@@ -1,6 +1,7 @@
 package com.example.musicplayer.HomeScreen.ui
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.Navigator
@@ -82,22 +85,36 @@ object HomeScreenRootScreen : Screen {
 }
 @Composable
 fun HomeScreenRoot(
-    viewModel: MusicViewModel = koinViewModel(),
+    musicViewModel: MusicViewModel = koinViewModel(),
     homeViewModel: HomeScreenViewModel = koinViewModel()
 ) {
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        homeViewModel.uiEffect.collect {  effect ->
+            when(effect){
+                is HomeUiEffect.showToast -> {
+                    Toast.makeText(context, effect.message, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
     HomeScreen(
-        progress = viewModel.progress,
-        onProgress = { viewModel.onEvent(MusicEvent.UpdateProgress(it)) },
-        isAudioPlaying = viewModel.isPlaying,
-        currentPlayingAudio = viewModel.currentSelectedAudio,
-        audiList = viewModel.audioList,
-        onStart = { viewModel.onEvent(MusicEvent.PlayPause) },
-        onItemClick = { viewModel.onEvent(MusicEvent.SelectedAudioChange(it)) },
-        onNext = { viewModel.onEvent(MusicEvent.SeekToNext) },
-        onPrevious = { viewModel.onEvent(MusicEvent.SeekToPrevious) },
-        playList = viewModel.playlistList,
+        progress = musicViewModel.progress,
+        onProgress = { musicViewModel.onEvent(MusicEvent.UpdateProgress(it)) },
+        isAudioPlaying = musicViewModel.isPlaying,
+        currentPlayingAudio = musicViewModel.currentSelectedAudio,
+        audiList = musicViewModel.audioList,
+        onStart = { musicViewModel.onEvent(MusicEvent.PlayPause) },
+        onItemClick = { musicViewModel.onEvent(MusicEvent.SelectedAudioChange(it)) },
+        onNext = { musicViewModel.onEvent(MusicEvent.SeekToNext) },
+        onPrevious = { musicViewModel.onEvent(MusicEvent.SeekToPrevious) },
+        playList = musicViewModel.playlistList,
         onAddToPlaylist = { audio, playlistId ->
             homeViewModel.onEvent(HomeEvent.AddToPlaylist(audio, playlistId))
+        },
+        onRepeat = {
+            musicViewModel.onEvent(MusicEvent.ToggleRepeat)
         }
     )
 }
@@ -112,6 +129,7 @@ fun HomeScreen(
     audiList: List<AudioFile>,
     playList : List<PlayList>,
     onStart: () -> Unit,
+    onRepeat: () -> Unit,
     onItemClick: (Int) -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
@@ -123,6 +141,7 @@ fun HomeScreen(
     var showBottomSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     var selectedAudio by remember { mutableStateOf<AudioFile?>(null) }
+
 
     if (showBottomSheet) {
         PlaylistBottomSheet(
@@ -172,6 +191,7 @@ fun HomeScreen(
                     onNext = onNext,
                     isAudioPlaying = isAudioPlaying,
                     onPrevious = onPrevious,
+                    onRepeat = onRepeat
                 )
             }
         },
@@ -232,6 +252,7 @@ fun HomeScreenPreview() {
             audiList = mockAudioList,
             playList = emptyList(),
             onStart = {},
+            onRepeat = {},
             onItemClick = {},
             onNext = {},
             onPrevious = {},

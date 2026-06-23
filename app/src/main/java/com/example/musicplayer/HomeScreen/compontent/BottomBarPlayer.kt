@@ -6,7 +6,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.RepeatOn
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,15 +30,33 @@ fun BottomBarPlayer(
     isAudioPlaying: Boolean,
     onStart: () -> Unit,
     onNext: () -> Unit,
-    onPrevious:() -> Unit
+    onPrevious:() -> Unit,
+    onRepeat:() -> Unit
 ) {
     BottomAppBar(
-        modifier = Modifier.height(150.dp)
+        modifier = Modifier.height(220.dp)
     ) {
         Column(
             modifier = Modifier.padding(8.dp)
         ) {
-
+            Slider(
+                value = progress,
+                onValueChange = { onProgress(it) },
+                valueRange = 0f..1f
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onRepeat) {
+                    Icon(
+                        Icons.Default.RepeatOn,
+                        contentDescription = null,
+                    )
+                }
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth(),
@@ -63,11 +85,6 @@ fun BottomBarPlayer(
                     text = timeStampToDuration(audio.duration.toLong()),
                 )
             }
-            Slider(
-                value = progress,
-                onValueChange = { onProgress(it) },
-                valueRange = 0f..1f
-            )
 
         }
     }
@@ -90,6 +107,7 @@ fun BottomBarPlayerPreview() {
         isAudioPlaying = true,
         onStart = {},
         onNext = {},
-        onPrevious = {}
+        onPrevious = {}, {
+        }
     )
 }

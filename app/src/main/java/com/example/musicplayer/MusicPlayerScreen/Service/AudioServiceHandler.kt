@@ -47,6 +47,7 @@ class AudioServiceHandler(
         selectedAudioIndex: Int = -1,
         seekPosition: Long = 0
     ) {
+
         when (playerEvent) {
             PlayerEvent.Backward -> exoPlayer.seekBack()
             PlayerEvent.Forward -> exoPlayer.seekForward()
@@ -87,6 +88,19 @@ class AudioServiceHandler(
                 _playerState.value = Playing(isPlaying = true)
                 startProgressUpdate()
             }
+
+            PlayerEvent.ToggleRepeat -> {
+                exoPlayer.repeatMode = when(exoPlayer.repeatMode){
+                    Player.REPEAT_MODE_OFF -> {
+                        Player.REPEAT_MODE_ONE
+                    }
+
+                    Player.REPEAT_MODE_ONE -> {
+                        Player.REPEAT_MODE_ALL
+                    }
+                    else -> Player.REPEAT_MODE_OFF
+                }
+            }
         }
     }
 
@@ -106,6 +120,11 @@ class AudioServiceHandler(
                 Log.d("AudioServiceHandler", "Player Idle")
             }
         }
+    }
+
+    override fun onRepeatModeChanged(repeatMode: Int) {
+        super.onRepeatModeChanged(repeatMode)
+        _playerState.value = AudioState.RepeatModeChanged(repeatMode)
     }
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         Log.d("AudioServiceHandler", "Is Playing: $isPlaying")
@@ -164,6 +183,7 @@ sealed class PlayerEvent {
     object SeekToNext : PlayerEvent()
     object SeekToPrevious : PlayerEvent()
     object Forward : PlayerEvent()
+    object ToggleRepeat : PlayerEvent()
     object SeekTo : PlayerEvent()
     object Stop : PlayerEvent()
     data class UpdateProgress(val newProgress: Float) : PlayerEvent()
@@ -175,6 +195,7 @@ sealed class AudioState {
     data class Ready(val duration: Long) : AudioState()
     data class Progress(val progress: Long) : AudioState()
     data class Buffering(val progress: Long) : AudioState()
+    data class RepeatModeChanged(val repeatModeChanged: Int) : AudioState()
     data class Playing(val isPlaying: Boolean) : AudioState()
     data class CurrentPlaying(val mediaItems: MediaItem? ) : AudioState()
 }
