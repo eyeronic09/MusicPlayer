@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -29,8 +27,6 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.example.musicplayer.HomeScreen.Playlist.domain.model.PlayList
-import com.example.musicplayer.HomeScreen.ui.HomeScreenViewModel
 import com.example.musicplayer.MusicPlayerScreen.UI.MusicEvent
 import com.example.musicplayer.MusicPlayerScreen.UI.MusicViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -116,40 +112,28 @@ fun PlaylistScreen(
                         .padding(paddingValues)
                 ) {
                     items(uiState.playList) { playlist ->
-                        PlaylistAllSongCard(
-                            playlist = playlist,
-                            onClickItem = {
-                                nav.push(
-                                    PlaylistAllSong(playlist.playlistId)
-                                )
-                            },
-                            onClickPlay = {
-                                onMusicEvent(MusicEvent.PlayPlaylist(playlist.playlistId))
-                            },
+                        Text(
+                            text = playlist.playListName,
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .clickable {
+                                    Log.d("PlaylistScreen", "Playlist ID: ${playlist.playlistId}")
+                                    nav.push(PlaylistAllSong(playlist = playlist.playlistId))
+                                }
                         )
+                        Button(onClick = {
+                            onMusicEvent(MusicEvent.PlayPlaylist(playlist.playlistId))
+                            Log.d("PlaylistScreen", "Playlist  of Play button ID: ${playlist.playlistId}")
+                        }) {
+                            Text(text = "play")
+                        }
 
                     }
                 }
             }
 
+
         }
     }
+
 }
-
-
-@Composable
-fun PlaylistAllSongCard(playlist: PlayList , onClickItem : (Int) -> Unit , onClickPlay : (Int) -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(
-            onClick = {
-                onClickItem(playlist.playlistId.toInt())
-            }
-        ),
-    ) {
-        Text(text = playlist.playListName)
-        Button(onClick = { onClickPlay(playlist.playlistId.toInt()) }) {
-            Text("play")
-        }
-    }
-
-}   

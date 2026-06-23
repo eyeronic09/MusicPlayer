@@ -49,6 +49,7 @@ class MusicViewModel(
     saveStateHandler: SavedStateHandle
 ) : ViewModel() {
     var duration by saveStateHandler.saveable { mutableLongStateOf(0L) }
+    var audioId by saveStateHandler.saveable { mutableStateOf(audioDummy.id.toInt()) }
     var progress by saveStateHandler.saveable { mutableFloatStateOf(0f) }
     var isPlaying by saveStateHandler.saveable { mutableStateOf(false) }
     var currentSelectedAudio by saveStateHandler.saveable { mutableStateOf(audioDummy) }
@@ -131,24 +132,34 @@ class MusicViewModel(
                 }
 
                 is MusicEvent.SelectedAudioIndex -> {
-                    audioService.onPlayerEvents(
-                        SelectedAudioChange,
-                        selectedAudioIndex = event.index
-                    )
+                    if (event.index in audioList.indices){
+                        val song = audioList[event.index]
+                        this@MusicViewModel.audioId = song.id.toInt()
+                        this@MusicViewModel.currentSelectedAudio = song
+                        audioService.onPlayerEvents(SelectedAudioChange , selectedAudioIndex = event.index)
+                    }
                 }
 
                 is MusicEvent.PlayPlaylist -> {
-                    PlayPlaylist(event.playlist)
+                    playPlaylist(event.playlist)
+                }
+
+                is MusicEvent.ShufflePlaylist -> {
+                    shufflePlaylist(event.playlist)
                 }
 
                 is MusicEvent.PlayOnlySong -> {
+                    val song = event.audio
+                    // --- Setting the ID for persistences ---
+                    this@MusicViewModel.audioId = song.id.toInt()
+                    this@MusicViewModel.currentSelectedAudio = song
                     onlyOnMediaItem(audio = event.audio.toMediaItem())
                 }
             }
         }
     }
 
-    private fun PlayPlaylist(id : Long  ){
+    private fun playPlaylist(id : Long ){
         viewModelScope.launch {
             playlist.getSongsInPlaylist(id).collect{
                 this@MusicViewModel.audioList = it
@@ -161,6 +172,21 @@ class MusicViewModel(
             }
         }
     }
+
+    private fun shufflePlaylist(id: Long) {
+        viewModelScope.launch {
+            playlist.getSongsInPlaylist(id).collect {
+                val shuffledList = it.shuffled()
+                this@MusicViewModel.audioList = shuffledList
+                val mediaItems = shuffledList.map { audioFile -> audioFile.toMediaItem() }
+                setMediaItems(
+                    mediaItems,
+                    playWhenReady = true,
+                )
+            }
+        }
+    }
+
     private fun calculateProgress(currentProgress: Long) {
         progress = if (currentProgress > 0 && duration > 0) {
             (currentProgress.toFloat() / duration.toFloat())
@@ -171,6 +197,12 @@ class MusicViewModel(
         viewModelScope.launch {
             repository.getAllAudioFilesFromDb().collectLatest { audioFiles ->
                 this@MusicViewModel.audioList = audioFiles
+                
+                // Restore selection based on saved audioId
+                audioFiles.find { it.id.toInt() == audioId }?.let {
+                    currentSelectedAudio = it
+                }
+
                 val mediaItems = audioFiles.map { it.toMediaItem() }
                 setMediaItems(mediaItems , playWhenReady = false)
             }
@@ -205,6 +237,7 @@ class MusicViewModel(
 sealed class MusicEvent {
 
     data class PlayPlaylist(val playlist : Long) : MusicEvent()
+    data class ShufflePlaylist(val playlist: Long) : MusicEvent()
     data class PlayOnlySong(val audio: AudioFile) : MusicEvent()
     object PlayPause : MusicEvent()
     data class SelectedAudioChange(val index: Int) : MusicEvent()

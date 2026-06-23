@@ -43,7 +43,7 @@ import java.util.Locale
 @Composable
 fun AudioItem(
     audio: AudioFile,
-    isSelected: Boolean,
+    isSelected: () -> Boolean,
     onItemClick: () -> Unit = {},
     onAddToPlaylist: (() -> Unit)? = null,
 ) {
@@ -56,7 +56,9 @@ fun AudioItem(
             .clickable {
                 onItemClick()
             },
-        border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+        border = if (isSelected()) {
+            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+        } else null
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -144,7 +146,7 @@ fun AudioItemPreview() {
                 album = "Sample Album",
                 duration = 300000,
             ),
-            isSelected = false,
+            isSelected = { false },
             onItemClick = {}
         )
     }
@@ -163,7 +165,7 @@ fun AudioItemSelectedPreview() {
                 album = "Sample Album",
                 duration = 300000,
             ),
-            isSelected = true,
+            isSelected = { true },
             onItemClick = {}
         )
     }

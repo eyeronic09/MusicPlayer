@@ -192,7 +192,7 @@ fun HomeScreen(
                             Log.d("HomeScreen", "Rendering index: $index, audio: ${audio.id}")
                             AudioItem(
                                 audio = audio,
-                                isSelected = audio.id == currentPlayingAudio.id,
+                                isSelected = { audio.id == currentPlayingAudio.id },
                                 onItemClick = { onItemClick(index) },
                                 onAddToPlaylist = {
                                     selectedAudio = audio
