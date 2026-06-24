@@ -5,7 +5,9 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import com.example.musicplayer.HomeScreen.domain.model.AudioFile
 import com.example.musicplayer.MusicPlayerScreen.Service.AudioState.*
+import com.example.musicplayer.MusicPlayerScreen.mapper.toMediaItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -44,7 +46,8 @@ class AudioServiceHandler(
 
     fun onPlayerEvents(
         playerEvent: PlayerEvent,
-        selectedAudioIndex: Int = -1,
+        homeSongAudio: AudioFile,
+        audioList: List<AudioFile> = emptyList(),
         seekPosition: Long = 0
     ) {
 
@@ -53,31 +56,37 @@ class AudioServiceHandler(
             PlayerEvent.Forward -> exoPlayer.seekForward()
             PlayerEvent.SeekToNext -> exoPlayer.seekToNext()
             PlayerEvent.SeekToPrevious -> exoPlayer.seekToPrevious()
+            PlayerEvent.SeekTo -> {
+                exoPlayer.seekTo(seekPosition)
+            }
+            PlayerEvent.ToggleRepeat -> {
+
+            }
             PlayerEvent.PlayPause -> playOrPause()
             PlayerEvent.Stop -> {
                 exoPlayer.stop()
                 stopProgressUpdate()
             }
+
             PlayerEvent.SelectedAudioChange -> {
-                if (selectedAudioIndex != -1) {
-                    Log.d("AudioServiceHandler", "Changing audio to index: $selectedAudioIndex")
-                    val mediaItem = exoPlayer.getMediaItemAt(selectedAudioIndex)
-                    Log.d("AudioServiceHandler", "Media URI: ${mediaItem.localConfiguration?.uri}")
-                    
-                    exoPlayer.seekToDefaultPosition(selectedAudioIndex)
-                    exoPlayer.playWhenReady = true
-                    exoPlayer.prepare()
-                    exoPlayer.play()
-                    _playerState.value = CurrentPlaying(mediaItem)
-                    _playerState.value = Playing(isPlaying = true)
-                    startProgressUpdate()
+                if (audioList.isNotEmpty()) {
+                    // Set the whole playlist
+                    val mediaItems = audioList.map { it.toMediaItem() }
+                    exoPlayer.setMediaItems(mediaItems)
+
+                    // Find and seek to the selected song
+                    val index = audioList.indexOfFirst { it.id == homeSongAudio.id }
+                    if (index != -1) {
+                        exoPlayer.seekTo(index, 0)
+                    }
+                } else {
+                    exoPlayer.setMediaItem(homeSongAudio.toMediaItem())
                 }
-            }
-            PlayerEvent.SeekTo -> exoPlayer.seekTo(seekPosition)
-            is PlayerEvent.UpdateProgress -> {
-                if (exoPlayer.duration > 0) {
-                    exoPlayer.seekTo((exoPlayer.duration * playerEvent.newProgress).toLong())
-                }
+                exoPlayer.prepare()
+                exoPlayer.play()
+                _playerState.value = Playing(isPlaying = true)
+                _playerState.value = CurrentPlaying(exoPlayer.currentMediaItem)
+                startProgressUpdate()
             }
 
             is PlayerEvent.OnAudioSongPlay -> {
@@ -89,7 +98,7 @@ class AudioServiceHandler(
                 startProgressUpdate()
             }
 
-            PlayerEvent.ToggleRepeat -> {
+            PlayerEvent.ToggleShuffle -> {
                 exoPlayer.repeatMode = when(exoPlayer.repeatMode){
                     Player.REPEAT_MODE_OFF -> {
                         Player.REPEAT_MODE_ONE
@@ -100,29 +109,15 @@ class AudioServiceHandler(
                     else -> Player.REPEAT_MODE_OFF
                 }
             }
-
-            PlayerEvent.ToggleShuffle -> {
-                exoPlayer.shuffleModeEnabled = !exoPlayer.shuffleModeEnabled
+            is PlayerEvent.UpdateProgress -> {
+                if (exoPlayer.duration > 0) {
+                    exoPlayer.seekTo((exoPlayer.duration * playerEvent.newProgress).toLong())
+                }
             }
         }
-    }
 
-    override fun onPlaybackStateChanged(playbackState: Int) {
-        when (playbackState) {
-            Player.STATE_READY -> {
-                Log.d("AudioServiceHandler", "Player Ready, duration: ${exoPlayer.duration}")
-                _playerState.value = Ready(exoPlayer.duration)
-            }
-            Player.STATE_BUFFERING -> {
-                _playerState.value = Buffering(exoPlayer.currentPosition)
-            }
-            Player.STATE_ENDED -> {
-                _playerState.value = Playing(isPlaying = false)
-            }
-            Player.STATE_IDLE -> {
-                Log.d("AudioServiceHandler", "Player Idle")
-            }
-        }
+
+
     }
 
     override fun onRepeatModeChanged(repeatMode: Int) {
@@ -159,10 +154,11 @@ class AudioServiceHandler(
         job?.cancel()
         job = scope.launch {
             while (true) {
+                delay(1000.milliseconds)
                 if (exoPlayer.isPlaying) {
                     _playerState.value = Progress(exoPlayer.currentPosition)
                 }
-                delay(1000.milliseconds)
+
             }
         }
     }

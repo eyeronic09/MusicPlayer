@@ -7,6 +7,7 @@ import com.example.musicplayer.HomeScreen.Playlist.domain.model.PlayList
 import com.example.musicplayer.HomeScreen.Playlist.domain.reposistory.PlaylistRepository
 import com.example.musicplayer.HomeScreen.domain.model.AudioFile
 import com.example.musicplayer.HomeScreen.domain.reposistory.MusicRepository
+import com.example.musicplayer.HomeScreen.ui.HomeUiEffect.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,9 +18,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class HomeScreenUIState(
-    val SongList : List<AudioFile> = emptyList(),
-    val Playlist : List<PlayList> = emptyList(),
+    val allSongs : List<AudioFile> = emptyList(),
+    val songList : List<AudioFile> = emptyList(),
+    val playlist : List<PlayList> = emptyList(),
+    val filteredItem : List<AudioFile> = emptyList(),
+    val searchedQuery : String = "",
     val selectedAudioId : Int? = null,
+    val isSearching : Boolean = false,
     val selectedPlayList : Int? = null,
     val ERROR: String? = "",
     val Loading: Boolean = false
@@ -28,10 +33,14 @@ data class HomeScreenUIState(
 
 sealed interface HomeUiEffect {
     data class showToast(val message : String) : HomeUiEffect
+
 }
 sealed interface HomeEvent {
-    data class selectedSongId(val id : Int) : HomeEvent
-    data class selectedPlayList(val id : Int) : HomeEvent
+    object OpenSearchBar : HomeEvent
+    object CloseSearchBar : HomeEvent
+    data class OnSearchQueryChange(val query: String) : HomeEvent
+    data class SelectedSongId(val id : Int) : HomeEvent
+    data class SelectedPlayList(val id : Int) : HomeEvent
     data class AddToPlaylist(val Audio: AudioFile, val playlistId: Long) : HomeEvent
 }
 class HomeScreenViewModel(private val repository: MusicRepository , private val playlistRepository: PlaylistRepository) : ViewModel() {
@@ -46,7 +55,6 @@ class HomeScreenViewModel(private val repository: MusicRepository , private val 
 
     init {
         loadSongs()
-        loadPlaylist()
     }
 
 
@@ -54,7 +62,7 @@ class HomeScreenViewModel(private val repository: MusicRepository , private val 
         viewModelScope.launch {
                 playlistRepository.getAllPlayList().collectLatest { playlist ->
                     _uiState.update {
-                        it.copy(Playlist = playlist)
+                        it.copy(playlist = playlist)
                     }
             }
         }
@@ -67,8 +75,9 @@ class HomeScreenViewModel(private val repository: MusicRepository , private val 
                 repository.getAllAudioFilesFromDb().collect { song ->
                     _uiState.update {
                         it.copy(
-                            SongList = song,
-                            Loading = false
+                            allSongs = song,
+                            Loading = false,
+                            songList = if (it.searchedQuery.isEmpty()) song else it.songList
                         )
                     }
                 }
@@ -80,14 +89,36 @@ class HomeScreenViewModel(private val repository: MusicRepository , private val 
         }
     }
 
+    private fun filterSongs(query: String) {
+        if (query.isEmpty()){
+            _uiState.update {
+                it.copy(filteredItem = emptyList(),
+                    isSearching = false,
+                    searchedQuery = "")
+            }
+        }else {
+            val filtered =  _uiState.value.allSongs.filter { song -> song.displayName.contains(query , ignoreCase = true) }
+            Log.d("filterCheck", "Query: $query, Found: ${filtered.size}")
+            _uiState.update {
+                it.copy(
+                    filteredItem = filtered,
+                    isSearching = true,
+                    searchedQuery = query
+                )
+            }
+        }
+
+    }
+
     fun onEvent(event: HomeEvent) {
         when (event) {
-            is HomeEvent.selectedSongId -> {
+            is HomeEvent.SelectedSongId -> {
                 _uiState.update {
                     it.copy(selectedAudioId = event.id)
                 }
+
             }
-            is HomeEvent.selectedPlayList -> {
+            is HomeEvent.SelectedPlayList -> {
                 _uiState.update {
                     it.copy(selectedPlayList = event.id)
                 }
@@ -97,8 +128,25 @@ class HomeScreenViewModel(private val repository: MusicRepository , private val 
                     playlistRepository.insertSongFromPlaylist(audioFile = event.Audio ,
                         event.playlistId
                     )
-                    _uiEffect.emit(HomeUiEffect.showToast("Added  to playlist"))
+                    _uiEffect.emit(showToast("Added  to playlist"))
                 }
+            }
+
+            HomeEvent.OpenSearchBar -> {
+                _uiState.update { it.copy(isSearching = true)  }
+            }
+
+            HomeEvent.CloseSearchBar -> {
+                _uiState.update { it.copy(isSearching = false) }
+            }
+            is HomeEvent.OnSearchQueryChange -> {
+                _uiState.update {
+                    it.copy(
+                        searchedQuery = event.query,
+                    )
+                }
+                filterSongs(event.query)
+                Log.d("filteredItem" , uiState.value.filteredItem.toString())
             }
         }
     }

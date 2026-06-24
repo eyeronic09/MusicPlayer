@@ -12,7 +12,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SecondaryTabRow
@@ -22,6 +25,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,6 +50,9 @@ import com.example.musicplayer.MusicPlayerScreen.UI.MusicViewModel
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import kotlin.math.floor
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.musicplayer.HomeScreen.compontent.Searchingbar
+import androidx.compose.runtime.collectAsState
 
 enum class HomeTabs(val title: String) {
     Songs("Songs"),
@@ -88,6 +95,7 @@ fun HomeScreenRoot(
     musicViewModel: MusicViewModel = koinViewModel(),
     homeViewModel: HomeScreenViewModel = koinViewModel()
 ) {
+    val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         homeViewModel.uiEffect.collect {  effect ->
@@ -104,7 +112,7 @@ fun HomeScreenRoot(
         onProgress = { musicViewModel.onEvent(MusicEvent.UpdateProgress(it)) },
         isAudioPlaying = musicViewModel.isPlaying,
         currentPlayingAudio = musicViewModel.currentSelectedAudio,
-        audiList = musicViewModel.audioList,
+        audiList = if (uiState.isSearching) uiState.filteredItem else uiState.allSongs,
         onStart = { musicViewModel.onEvent(MusicEvent.PlayPause) },
         onItemClick = { musicViewModel.onEvent(MusicEvent.SelectedAudioChange(it)) },
         onNext = { musicViewModel.onEvent(MusicEvent.SeekToNext) },
@@ -120,7 +128,12 @@ fun HomeScreenRoot(
         },
         onShuffle = {
             musicViewModel.onEvent(MusicEvent.ToggleShuffle)
-        }
+        },
+        onOpenSearch = { homeViewModel.onEvent(HomeEvent.OpenSearchBar) },
+        isSearching = uiState.isSearching,
+        searchQuery = uiState.searchedQuery,
+        onSearchQueryChange = { homeViewModel.onEvent(HomeEvent.OnSearchQueryChange(it)) },
+        onCloseSearch = { homeViewModel.onEvent(HomeEvent.CloseSearchBar) }
     )
 }
 
@@ -128,27 +141,34 @@ fun HomeScreenRoot(
 @Composable
 fun HomeScreen(
     progress: Float,
+    isSearching: Boolean,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    onCloseSearch: () -> Unit,
     onProgress: (Float) -> Unit,
     isAudioPlaying: Boolean,
     currentPlayingAudio: AudioFile,
     audiList: List<AudioFile>,
-    playList : List<PlayList>,
+    playList: List<PlayList>,
     repeatMode: Int,
     isShuffleEnabled: Boolean,
     onStart: () -> Unit,
     onRepeat: () -> Unit,
     onShuffle: () -> Unit,
-    onItemClick: (Int) -> Unit,
+    onItemClick: (AudioFile) -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
-    onAddToPlaylist: (AudioFile, Long) -> Unit
+    onAddToPlaylist: (AudioFile, Long) -> Unit,
+    onOpenSearch: () -> Unit
 ) {
+
     val tabs = HomeTabs.entries
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val coroutineScope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     var selectedAudio by remember { mutableStateOf<AudioFile?>(null) }
+
 
 
     if (showBottomSheet) {
@@ -165,13 +185,36 @@ fun HomeScreen(
         )
     }
 
+
     Scaffold(
         topBar = {
             Column {
-                TopAppBar(
-                    title = { Text(text = "Music Player") },
-                    windowInsets = WindowInsets(0, 0, 0, 0)
-                )
+                if (isSearching){
+                    Searchingbar(
+                        query = searchQuery,
+                        onQueryChange = onSearchQueryChange,
+                        onSearch = {
+                        },
+                        active = isSearching,
+                        onActiveChange = { if (!it) onCloseSearch() },
+                        content = {}
+                    )
+                }else {
+                    TopAppBar(
+                        title = { Text(text = "Music Player") },
+                        windowInsets = WindowInsets(0, 0, 0, 0),
+                        actions = {
+                            IconButton(onClick = onOpenSearch  ) {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = null
+                                )
+                            }
+                        }
+                    )
+                }
+
+
                 SecondaryTabRow(
                     selectedTabIndex = pagerState.currentPage,
                 ) {
@@ -219,12 +262,12 @@ fun HomeScreen(
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                     ) {
-                        itemsIndexed(audiList) { index, audio ->
+                        itemsIndexed(items = audiList) { index, audio ->
                             Log.d("HomeScreen", "Rendering index: $index, audio: ${audio.id}")
                             AudioItem(
                                 audio = audio,
                                 isSelected = { audio.id == currentPlayingAudio.id },
-                                onItemClick = { onItemClick(index) },
+                                onItemClick = { onItemClick(audio) },
                                 onAddToPlaylist = {
                                     selectedAudio = audio
                                     showBottomSheet = true
@@ -234,7 +277,6 @@ fun HomeScreen(
                     }
                 }
                 HomeTabs.Album -> {
-                    // Placeholder for Album Screen
                     Text(text = "Album Screen")
                 }
                 HomeTabs.Playlist -> {
@@ -257,6 +299,10 @@ fun HomeScreenPreview() {
     Surface {
         HomeScreen(
             progress = 0.5f,
+            isSearching = true,
+            searchQuery = "fdi",
+            onSearchQueryChange = {},
+            onCloseSearch = {},
             onProgress = {},
             isAudioPlaying = false,
             currentPlayingAudio = mockAudioList[0],
@@ -270,7 +316,8 @@ fun HomeScreenPreview() {
             onItemClick = {},
             onNext = {},
             onPrevious = {},
-            onAddToPlaylist = { _, _ -> }
+            onAddToPlaylist = { d , _ , ->},
+            onOpenSearch = {}
         )
     }
 }
