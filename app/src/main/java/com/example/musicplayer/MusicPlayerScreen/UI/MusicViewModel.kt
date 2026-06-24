@@ -17,14 +17,17 @@ import com.example.musicplayer.HomeScreen.Playlist.domain.model.PlayList
 import com.example.musicplayer.HomeScreen.Playlist.domain.reposistory.PlaylistRepository
 import com.example.musicplayer.HomeScreen.domain.model.AudioFile
 import com.example.musicplayer.HomeScreen.domain.reposistory.MusicRepository
+import com.example.musicplayer.HomeScreen.ui.HomeUiEffect
 import com.example.musicplayer.MusicPlayerScreen.Service.AudioServiceHandler
 import com.example.musicplayer.MusicPlayerScreen.Service.AudioState
 import com.example.musicplayer.MusicPlayerScreen.Service.JetAudioService
 import com.example.musicplayer.MusicPlayerScreen.Service.PlayerEvent
 import com.example.musicplayer.MusicPlayerScreen.Service.PlayerEvent.*
 import com.example.musicplayer.MusicPlayerScreen.mapper.toMediaItem
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -37,6 +40,9 @@ private val audioDummy = AudioFile(
     duration = 0,
     albumIdForArt = -1
 )
+sealed interface uiToastMessage{
+    data class meassage(val msg : String) : uiToastMessage
+}
 
 @OptIn(SavedStateHandleSaveableApi::class)
 class MusicViewModel(
@@ -55,6 +61,12 @@ class MusicViewModel(
     var albumIdForArt by saveStateHandler.saveable { mutableStateOf("") }
     var playlistList by saveStateHandler.saveable { mutableStateOf(listOf<PlayList>()) }
     var repeatMode by saveStateHandler.saveable { mutableStateOf(value = Player.REPEAT_MODE_OFF) }
+    var isShuffleEnabled by saveStateHandler.saveable { mutableStateOf(false) }
+
+
+
+    private val _uiEffect = MutableSharedFlow<uiToastMessage>()
+    val uiEffect = _uiEffect.asSharedFlow()
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Initial)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -90,6 +102,10 @@ class MusicViewModel(
 
                     is AudioState.RepeatModeChanged -> {
                         repeatMode = state.repeatModeChanged
+                    }
+
+                    is AudioState.ShuffleModeChanged -> {
+                        isShuffleEnabled = state.isShuffleEnabled
                     }
                 }
             }
@@ -161,7 +177,22 @@ class MusicViewModel(
                 }
 
                 MusicEvent.ToggleRepeat -> {
-                    audioService.onPlayerEvents(PlayerEvent.ToggleRepeat)
+                    audioService.onPlayerEvents(ToggleRepeat)
+                    val message = when (repeatMode) {
+                        Player.REPEAT_MODE_OFF -> "Repeat One"
+                        Player.REPEAT_MODE_ONE -> "Repeat All"
+                        else -> "Repeat Off"
+                    }
+                    _uiEffect.emit(
+                        value = uiToastMessage.meassage(message)
+                    )
+                }
+
+                MusicEvent.ToggleShuffle -> {
+                    audioService.onPlayerEvents(ToggleShuffle)
+                    _uiEffect.emit(
+                        value = uiToastMessage.meassage(if (isShuffleEnabled) "Shuffle off" else "Shuffle on")
+                    )
                 }
             }
         }
@@ -248,6 +279,7 @@ sealed class MusicEvent {
     data class ShufflePlaylist(val playlist: Long) : MusicEvent()
     data class PlayOnlySong(val audio: AudioFile) : MusicEvent()
     object ToggleRepeat : MusicEvent()
+    object ToggleShuffle : MusicEvent()
     object PlayPause : MusicEvent()
     data class SelectedAudioChange(val index: Int) : MusicEvent()
     object Backward : MusicEvent()

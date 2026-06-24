@@ -7,10 +7,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.RepeatOn
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.RepeatOne
+import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,6 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.Player
 import com.example.musicplayer.HomeScreen.domain.model.AudioFile
 import com.example.musicplayer.HomeScreen.ui.timeStampToDuration
 
@@ -28,13 +32,16 @@ fun BottomBarPlayer(
     onProgress: (Float) -> Unit,
     audio: AudioFile,
     isAudioPlaying: Boolean,
+    repeatMode: Int = Player.REPEAT_MODE_OFF,
+    isShuffleEnabled: Boolean = false,
     onStart: () -> Unit,
     onNext: () -> Unit,
-    onPrevious:() -> Unit,
-    onRepeat:() -> Unit
+    onPrevious: () -> Unit,
+    onRepeat: () -> Unit,
+    onShuffle: () -> Unit = {}
 ) {
     BottomAppBar(
-        modifier = Modifier.height(220.dp)
+        modifier = Modifier.height(200.dp)
     ) {
         Column(
             modifier = Modifier.padding(8.dp)
@@ -50,10 +57,24 @@ fun BottomBarPlayer(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onRepeat) {
+                IconButton(onClick = onShuffle) {
                     Icon(
-                        Icons.Default.RepeatOn,
-                        contentDescription = null,
+                        imageVector = Icons.Default.Shuffle,
+                        contentDescription = "Shuffle",
+                        tint = if (isShuffleEnabled) MaterialTheme.colorScheme.primary 
+                               else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(onClick = onRepeat) {
+                    val icon = if (repeatMode == Player.REPEAT_MODE_ONE)
+                        Icons.Default.RepeatOne else Icons.Default.Repeat
+
+                    val tint = if (repeatMode == Player.REPEAT_MODE_OFF)
+                        MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = "Repeat",
+                        tint = tint
                     )
                 }
             }
@@ -105,9 +126,12 @@ fun BottomBarPlayerPreview() {
             duration = 300000,
         ),
         isAudioPlaying = true,
+        repeatMode = Player.REPEAT_MODE_OFF,
+        isShuffleEnabled = false,
         onStart = {},
         onNext = {},
-        onPrevious = {}, {
-        }
+        onPrevious = {},
+        onRepeat = {},
+        onShuffle = {}
     )
 }

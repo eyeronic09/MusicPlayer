@@ -110,11 +110,16 @@ fun HomeScreenRoot(
         onNext = { musicViewModel.onEvent(MusicEvent.SeekToNext) },
         onPrevious = { musicViewModel.onEvent(MusicEvent.SeekToPrevious) },
         playList = musicViewModel.playlistList,
+        repeatMode = musicViewModel.repeatMode,
+        isShuffleEnabled = musicViewModel.isShuffleEnabled,
         onAddToPlaylist = { audio, playlistId ->
             homeViewModel.onEvent(HomeEvent.AddToPlaylist(audio, playlistId))
         },
         onRepeat = {
             musicViewModel.onEvent(MusicEvent.ToggleRepeat)
+        },
+        onShuffle = {
+            musicViewModel.onEvent(MusicEvent.ToggleShuffle)
         }
     )
 }
@@ -128,8 +133,11 @@ fun HomeScreen(
     currentPlayingAudio: AudioFile,
     audiList: List<AudioFile>,
     playList : List<PlayList>,
+    repeatMode: Int,
+    isShuffleEnabled: Boolean,
     onStart: () -> Unit,
     onRepeat: () -> Unit,
+    onShuffle: () -> Unit,
     onItemClick: (Int) -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
@@ -191,7 +199,10 @@ fun HomeScreen(
                     onNext = onNext,
                     isAudioPlaying = isAudioPlaying,
                     onPrevious = onPrevious,
-                    onRepeat = onRepeat
+                    onRepeat = onRepeat,
+                    repeatMode = repeatMode,
+                    isShuffleEnabled = isShuffleEnabled,
+                    onShuffle = onShuffle
                 )
             }
         },
@@ -251,8 +262,11 @@ fun HomeScreenPreview() {
             currentPlayingAudio = mockAudioList[0],
             audiList = mockAudioList,
             playList = emptyList(),
+            repeatMode = 0,
+            isShuffleEnabled = false,
             onStart = {},
             onRepeat = {},
+            onShuffle = {},
             onItemClick = {},
             onNext = {},
             onPrevious = {},

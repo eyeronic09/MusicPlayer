@@ -39,6 +39,7 @@ class HomeScreenViewModel(private val repository: MusicRepository , private val 
     private val _uiState = MutableStateFlow(HomeScreenUIState())
     val uiState: StateFlow<HomeScreenUIState> = _uiState.asStateFlow()
 
+
     private val _uiEffect = MutableSharedFlow<HomeUiEffect>()
     val uiEffect = _uiEffect.asSharedFlow()
 

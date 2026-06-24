@@ -66,7 +66,7 @@ class AudioServiceHandler(
                     
                     exoPlayer.seekToDefaultPosition(selectedAudioIndex)
                     exoPlayer.playWhenReady = true
-                    exoPlayer.prepare() // Ensure preparedL
+                    exoPlayer.prepare()
                     exoPlayer.play()
                     _playerState.value = CurrentPlaying(mediaItem)
                     _playerState.value = Playing(isPlaying = true)
@@ -94,12 +94,15 @@ class AudioServiceHandler(
                     Player.REPEAT_MODE_OFF -> {
                         Player.REPEAT_MODE_ONE
                     }
-
                     Player.REPEAT_MODE_ONE -> {
                         Player.REPEAT_MODE_ALL
                     }
                     else -> Player.REPEAT_MODE_OFF
                 }
+            }
+
+            PlayerEvent.ToggleShuffle -> {
+                exoPlayer.shuffleModeEnabled = !exoPlayer.shuffleModeEnabled
             }
         }
     }
@@ -126,6 +129,12 @@ class AudioServiceHandler(
         super.onRepeatModeChanged(repeatMode)
         _playerState.value = AudioState.RepeatModeChanged(repeatMode)
     }
+
+    override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+        super.onShuffleModeEnabledChanged(shuffleModeEnabled)
+        _playerState.value = AudioState.ShuffleModeChanged(shuffleModeEnabled)
+    }
+
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         Log.d("AudioServiceHandler", "Is Playing: $isPlaying")
         _playerState.value = Playing(isPlaying)
@@ -186,6 +195,7 @@ sealed class PlayerEvent {
     object ToggleRepeat : PlayerEvent()
     object SeekTo : PlayerEvent()
     object Stop : PlayerEvent()
+    object ToggleShuffle : PlayerEvent()
     data class UpdateProgress(val newProgress: Float) : PlayerEvent()
     data class OnAudioSongPlay(val mediaItem : MediaItem) : PlayerEvent()
 }
@@ -196,6 +206,7 @@ sealed class AudioState {
     data class Progress(val progress: Long) : AudioState()
     data class Buffering(val progress: Long) : AudioState()
     data class RepeatModeChanged(val repeatModeChanged: Int) : AudioState()
+    data class ShuffleModeChanged(val isShuffleEnabled: Boolean) : AudioState()
     data class Playing(val isPlaying: Boolean) : AudioState()
     data class CurrentPlaying(val mediaItems: MediaItem? ) : AudioState()
 }
