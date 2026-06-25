@@ -28,6 +28,7 @@ import com.example.musicplayer.HomeScreen.ui.timeStampToDuration
 
 @Composable
 fun BottomBarPlayer(
+    displayName: String,
     progress: Float,
     onProgress: (Float) -> Unit,
     audio: AudioFile,
@@ -38,7 +39,8 @@ fun BottomBarPlayer(
     onNext: () -> Unit,
     onPrevious: () -> Unit,
     onRepeat: () -> Unit,
-    onShuffle: () -> Unit = {}
+    onShuffle: () -> Unit = {},
+    artist: String
 ) {
 
     BottomAppBar(
@@ -86,7 +88,7 @@ fun BottomBarPlayer(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ArtistInfo(
-                    audio = audio,
+                    audio = audio.copy(displayName = displayName),
                     modifier = Modifier.weight(1f),
                 )
                 MediaPlayerController(
@@ -116,6 +118,7 @@ fun BottomBarPlayer(
 @Composable
 fun BottomBarPlayerPreview() {
     BottomBarPlayer(
+        displayName = "Sample Song",
         progress = 0.5f,
         onProgress = {},
         audio = AudioFile(
@@ -127,12 +130,13 @@ fun BottomBarPlayerPreview() {
             duration = 300000,
         ),
         isAudioPlaying = true,
-        repeatMode = Player.REPEAT_MODE_OFF,
-        isShuffleEnabled = false,
         onStart = {},
         onNext = {},
         onPrevious = {},
         onRepeat = {},
-        onShuffle = {}
+            repeatMode = Player.REPEAT_MODE_OFF,
+        isShuffleEnabled = TODO(),
+        onShuffle = TODO(),
+        artist = TODO(),
     )
 }

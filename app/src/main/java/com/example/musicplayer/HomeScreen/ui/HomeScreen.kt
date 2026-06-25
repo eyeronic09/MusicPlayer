@@ -25,7 +25,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,7 +51,6 @@ import org.koin.androidx.compose.koinViewModel
 import kotlin.math.floor
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.musicplayer.HomeScreen.compontent.Searchingbar
-import androidx.compose.runtime.collectAsState
 
 enum class HomeTabs(val title: String) {
     Songs("Songs"),
@@ -108,13 +106,18 @@ fun HomeScreenRoot(
     }
 
     HomeScreen(
+        displayName = musicViewModel.displayName,
+        artist = musicViewModel.artist,
         progress = musicViewModel.progress,
         onProgress = { musicViewModel.onEvent(MusicEvent.UpdateProgress(it)) },
         isAudioPlaying = musicViewModel.isPlaying,
         currentPlayingAudio = musicViewModel.currentSelectedAudio,
         audiList = if (uiState.isSearching) uiState.filteredItem else uiState.allSongs,
         onStart = { musicViewModel.onEvent(MusicEvent.PlayPause) },
-        onItemClick = { musicViewModel.onEvent(MusicEvent.SelectedAudioChange(it)) },
+        onItemClick = { clickedSong ->
+            val currentList = if (uiState.isSearching) uiState.filteredItem else uiState.allSongs
+            musicViewModel.onEvent(MusicEvent.SelectedAudioChange(clickedSong, currentList))
+        },
         onNext = { musicViewModel.onEvent(MusicEvent.SeekToNext) },
         onPrevious = { musicViewModel.onEvent(MusicEvent.SeekToPrevious) },
         playList = musicViewModel.playlistList,
@@ -140,6 +143,8 @@ fun HomeScreenRoot(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    displayName: String,
+    artist: String,
     progress: Float,
     isSearching: Boolean,
     searchQuery: String,
@@ -235,6 +240,8 @@ fun HomeScreen(
         bottomBar = {
             if (currentPlayingAudio.id != -1L) {
                 BottomBarPlayer(
+                    displayName = displayName,
+                    artist = artist,
                     progress = progress,
                     onProgress = onProgress,
                     audio = currentPlayingAudio,
@@ -298,6 +305,8 @@ fun HomeScreenPreview() {
 
     Surface {
         HomeScreen(
+            displayName = "Sample Song",
+            artist = "Sample Artist",
             progress = 0.5f,
             isSearching = true,
             searchQuery = "fdi",

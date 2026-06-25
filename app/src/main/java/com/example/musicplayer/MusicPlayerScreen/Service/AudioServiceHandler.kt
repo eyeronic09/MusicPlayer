@@ -12,16 +12,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
 class AudioServiceHandler(
     private val exoPlayer: ExoPlayer
 ) : Player.Listener {
-    private val _playerState = MutableStateFlow<AudioState>(Initial)
-    val playerState = _playerState.asStateFlow()
+    private val _playerState = MutableSharedFlow<AudioState>(1 )
+    val playerState = _playerState.asSharedFlow()
 
     private var job: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main)
@@ -60,7 +60,11 @@ class AudioServiceHandler(
                 exoPlayer.seekTo(seekPosition)
             }
             PlayerEvent.ToggleRepeat -> {
-
+                exoPlayer.repeatMode = when (exoPlayer.repeatMode) {
+                    Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ONE
+                    Player.REPEAT_MODE_ONE -> Player.REPEAT_MODE_ALL
+                    else -> Player.REPEAT_MODE_OFF
+                }
             }
             PlayerEvent.PlayPause -> playOrPause()
             PlayerEvent.Stop -> {
@@ -69,23 +73,29 @@ class AudioServiceHandler(
             }
 
             PlayerEvent.SelectedAudioChange -> {
-                if (audioList.isNotEmpty()) {
-                    // Set the whole playlist
-                    val mediaItems = audioList.map { it.toMediaItem() }
-                    exoPlayer.setMediaItems(mediaItems)
+                val mediaItems = audioList.map { it.toMediaItem() }
 
-                    // Find and seek to the selected song
-                    val index = audioList.indexOfFirst { it.id == homeSongAudio.id }
-                    if (index != -1) {
-                        exoPlayer.seekTo(index, 0)
-                    }
-                } else {
+                val currentQueueIds = List(exoPlayer.mediaItemCount) { i -> exoPlayer.getMediaItemAt(i).mediaId }
+                val newQueueIds = mediaItems.map { it.mediaId }
+
+                // 2. Only reload the list if it's actually different (saves memory/time)
+                if (currentQueueIds != newQueueIds && mediaItems.isNotEmpty()) {
+                    exoPlayer.setMediaItems(mediaItems)
+                }
+
+                // 3. Find the ID in the list to get the NEW index
+                val index = audioList.indexOfFirst { it.id == homeSongAudio.id }
+
+                if (index != -1) {
+                    // Jump to the calculated index
+                    exoPlayer.seekTo(index, 0)
+                } else if (exoPlayer.mediaItemCount == 0) {
+                    // Fallback: If queue is empty, just play this one song
                     exoPlayer.setMediaItem(homeSongAudio.toMediaItem())
                 }
                 exoPlayer.prepare()
                 exoPlayer.play()
-                _playerState.value = Playing(isPlaying = true)
-                _playerState.value = CurrentPlaying(exoPlayer.currentMediaItem)
+                _playerState.tryEmit(Playing(isPlaying = true))
                 startProgressUpdate()
             }
 
@@ -93,21 +103,12 @@ class AudioServiceHandler(
                 exoPlayer.setMediaItem(playerEvent.mediaItem)
                 exoPlayer.prepare()
                 exoPlayer.play()
-                _playerState.value = CurrentPlaying(playerEvent.mediaItem)
-                _playerState.value = Playing(isPlaying = true)
+                _playerState.tryEmit(Playing(isPlaying = true))
                 startProgressUpdate()
             }
 
             PlayerEvent.ToggleShuffle -> {
-                exoPlayer.repeatMode = when(exoPlayer.repeatMode){
-                    Player.REPEAT_MODE_OFF -> {
-                        Player.REPEAT_MODE_ONE
-                    }
-                    Player.REPEAT_MODE_ONE -> {
-                        Player.REPEAT_MODE_ALL
-                    }
-                    else -> Player.REPEAT_MODE_OFF
-                }
+                exoPlayer.shuffleModeEnabled = !exoPlayer.shuffleModeEnabled
             }
             is PlayerEvent.UpdateProgress -> {
                 if (exoPlayer.duration > 0) {
@@ -122,16 +123,16 @@ class AudioServiceHandler(
 
     override fun onRepeatModeChanged(repeatMode: Int) {
         super.onRepeatModeChanged(repeatMode)
-        _playerState.value = AudioState.RepeatModeChanged(repeatMode)
+        _playerState.tryEmit(RepeatModeChanged(repeatMode))
     }
 
     override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
         super.onShuffleModeEnabledChanged(shuffleModeEnabled)
-        _playerState.value = AudioState.ShuffleModeChanged(shuffleModeEnabled)
+        _playerState.tryEmit(ShuffleModeChanged(shuffleModeEnabled))
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
-        _playerState.value = Playing(isPlaying)
+        _playerState.tryEmit(Playing(isPlaying))
 
         if (isPlaying) {
             startProgressUpdate()
@@ -147,14 +148,16 @@ class AudioServiceHandler(
 
     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
         super.onMediaItemTransition(mediaItem, reason)
-        _playerState.value = CurrentPlaying(mediaItem)
+        _playerState.tryEmit(CurrentPlaying(
+            mediaItem
+        ))
     }
     private fun startProgressUpdate() {
         job?.cancel()
         job = scope.launch {
             while (true) {
                 if (exoPlayer.isPlaying) {
-                    _playerState.value = Progress(exoPlayer.currentPosition)
+                    _playerState.tryEmit(Progress(exoPlayer.currentPosition))
                 }
                 delay(500.milliseconds)
             }
@@ -168,12 +171,12 @@ class AudioServiceHandler(
     private fun playOrPause() {
         if (exoPlayer.isPlaying) {
             exoPlayer.pause()
-            _playerState.value = Playing(isPlaying = false)
+            _playerState.tryEmit(Playing(isPlaying = false))
             stopProgressUpdate()
         } else {
             exoPlayer.prepare()
             exoPlayer.play()
-            _playerState.value = Playing(isPlaying = true)
+            _playerState.tryEmit(Playing(isPlaying = true))
             startProgressUpdate()
         }
     }
@@ -202,5 +205,5 @@ sealed class AudioState {
     data class RepeatModeChanged(val repeatModeChanged: Int) : AudioState()
     data class ShuffleModeChanged(val isShuffleEnabled: Boolean) : AudioState()
     data class Playing(val isPlaying: Boolean) : AudioState()
-    data class CurrentPlaying(val mediaItems: MediaItem? ) : AudioState()
+    data class CurrentPlaying(val mediaItem: MediaItem?) : AudioState()
 }

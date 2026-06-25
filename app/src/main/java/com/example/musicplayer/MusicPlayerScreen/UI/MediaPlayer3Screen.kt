@@ -76,6 +76,7 @@ object MediaPlayerTab : Tab {
             }
         }
         MediaPlayerScreenContent(
+            displayName = viewModel.displayName,
             progress = viewModel.progress,
             onProgress = { viewModel.onEvent(MusicEvent.UpdateProgress(it)) },
             isAudioPlaying = viewModel.isPlaying,
@@ -95,6 +96,7 @@ object MediaPlayerTab : Tab {
 
 @Composable
 fun MediaPlayerScreenContent(
+    displayName: String,
     progress: Float,
     onProgress: (Float) -> Unit,
     isAudioPlaying: Boolean,
@@ -132,7 +134,7 @@ fun MediaPlayerScreenContent(
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = audio.displayName,
+                text = displayName,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -214,6 +216,7 @@ fun MediaPlayerScreenContent(
 @Composable
 fun MediaPlayerScreenContentPreview() {
     MediaPlayerScreenContent(
+        displayName = "Sample Song",
         progress = 0.5f,
         onProgress = {},
         isAudioPlaying = true,
