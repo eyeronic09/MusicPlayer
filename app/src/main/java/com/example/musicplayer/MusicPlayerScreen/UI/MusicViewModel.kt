@@ -22,6 +22,7 @@ import com.example.musicplayer.MusicPlayerScreen.Service.AudioState
 import com.example.musicplayer.MusicPlayerScreen.Service.JetAudioService
 import com.example.musicplayer.MusicPlayerScreen.Service.PlayerEvent.*
 import com.example.musicplayer.MusicPlayerScreen.mapper.toMediaItem
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,6 +30,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private val audioDummy = AudioFile(
     id = -1,
@@ -62,14 +64,15 @@ class MusicViewModel(
     var isShuffleEnabled by saveStateHandler.saveable { mutableStateOf(false) }
 
 
-
     private val _uiEffect = MutableSharedFlow<uiToastMessage>()
     val uiEffect = _uiEffect.asSharedFlow()
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Initial)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
+
     init {
+
         viewModelScope.launch {
             repository.insertMediaStoreToDB()
         }
@@ -85,6 +88,7 @@ class MusicViewModel(
                         if (song != null) {
                             currentSelectedAudio = song
                             audioId = song.id.toInt()
+                            duration = song.duration.toLong()
                         }
                     }
                     AudioState.Initial -> _uiState.value = UiState.Initial
@@ -93,6 +97,7 @@ class MusicViewModel(
                     }
                     is AudioState.Progress -> {
                         calculateProgress(state.progress)
+
                     }
                     is AudioState.Ready -> {
                         duration = state.duration
@@ -156,6 +161,7 @@ class MusicViewModel(
                         homeSongAudio = currentSelectedAudio,
                         seekPosition = (duration * event.seekto).toLong()
                     )
+                    Log.d("player" , "$isPlaying   $duration")
                 }
 
                 MusicEvent.SeekToNext -> audioService.onPlayerEvents(
@@ -218,6 +224,7 @@ class MusicViewModel(
                         homeSongAudio = currentSelectedAudio
                     )
                 }
+
             }
         }
     }
@@ -251,9 +258,11 @@ class MusicViewModel(
     }
 
     private fun calculateProgress(currentProgress: Long) {
-        progress = if (currentProgress > 0 && duration > 0) {
-            (currentProgress.toFloat() / duration.toFloat())
+        Log.d("player" , "state $currentProgress  and dur $duration")
+        progress = if (currentProgress > 0) {
+            (currentProgress.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
         } else 0f
+
     }
 
     private fun loadAudioData() {

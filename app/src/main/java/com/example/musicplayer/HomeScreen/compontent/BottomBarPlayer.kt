@@ -40,6 +40,7 @@ fun BottomBarPlayer(
     onRepeat: () -> Unit,
     onShuffle: () -> Unit = {}
 ) {
+
     BottomAppBar(
         modifier = Modifier.height(200.dp)
     ) {

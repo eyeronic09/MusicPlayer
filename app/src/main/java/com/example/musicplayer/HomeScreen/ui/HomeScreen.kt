@@ -233,7 +233,7 @@ fun HomeScreen(
             }
         },
         bottomBar = {
-            if (isAudioPlaying) {
+            if (currentPlayingAudio.id != -1L) {
                 BottomBarPlayer(
                     progress = progress,
                     onProgress = onProgress,
@@ -316,7 +316,7 @@ fun HomeScreenPreview() {
             onItemClick = {},
             onNext = {},
             onPrevious = {},
-            onAddToPlaylist = { d , _ , ->},
+            onAddToPlaylist = { _, _ -> },
             onOpenSearch = {}
         )
     }

@@ -131,9 +131,8 @@ class AudioServiceHandler(
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
-        Log.d("AudioServiceHandler", "Is Playing: $isPlaying")
         _playerState.value = Playing(isPlaying)
-        _playerState.value = CurrentPlaying(exoPlayer.currentMediaItem)
+
         if (isPlaying) {
             startProgressUpdate()
         } else {
@@ -154,11 +153,10 @@ class AudioServiceHandler(
         job?.cancel()
         job = scope.launch {
             while (true) {
-                delay(1000.milliseconds)
                 if (exoPlayer.isPlaying) {
                     _playerState.value = Progress(exoPlayer.currentPosition)
                 }
-
+                delay(500.milliseconds)
             }
         }
     }
