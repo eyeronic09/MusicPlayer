@@ -95,7 +95,6 @@ class AudioServiceHandler(
                 }
                 exoPlayer.prepare()
                 exoPlayer.play()
-                _playerState.tryEmit(Playing(isPlaying = true))
                 startProgressUpdate()
             }
 
@@ -103,7 +102,6 @@ class AudioServiceHandler(
                 exoPlayer.setMediaItem(playerEvent.mediaItem)
                 exoPlayer.prepare()
                 exoPlayer.play()
-                _playerState.tryEmit(Playing(isPlaying = true))
                 startProgressUpdate()
             }
 
