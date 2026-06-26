@@ -22,7 +22,7 @@ import com.example.musicplayer.MusicPlayerScreen.Service.AudioState
 import com.example.musicplayer.MusicPlayerScreen.Service.JetAudioService
 import com.example.musicplayer.MusicPlayerScreen.Service.PlayerEvent.*
 import com.example.musicplayer.MusicPlayerScreen.mapper.toMediaItem
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,7 +30,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 private val audioDummy = AudioFile(
     id = -1,
@@ -44,7 +43,7 @@ sealed interface uiToastMessage{
     data class meassage(val msg : String) : uiToastMessage
 }
 
-@OptIn(SavedStateHandleSaveableApi::class)
+@OptIn(SavedStateHandleSaveableApi::class, DelicateCoroutinesApi::class)
 class MusicViewModel(
     private val audioService: AudioServiceHandler,
     private val repository: MusicRepository,
@@ -73,9 +72,7 @@ class MusicViewModel(
     private val _uiState = MutableStateFlow<UiState>(UiState.Initial)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
-
     init {
-
         viewModelScope.launch {
             repository.insertMediaStoreToDB()
         }
@@ -88,12 +85,9 @@ class MusicViewModel(
                     is AudioState.Buffering -> calculateProgress(state.progress)
                     is AudioState.CurrentPlaying -> {
                         val song = audioList.find { it.id.toString() == state.mediaItem?.mediaId }
+                        Log.d("currentPlaying" , song.toString())
                         if (song != null) {
-                            currentSelectedAudio = song
-                            audioId = song.id.toInt()
-                            duration = song.duration.toLong()
-                            displayName = song.displayName
-                            artist = song.artist
+                            updateSelectedAudio(song)
                         }
                     }
                     AudioState.Initial -> _uiState.value = UiState.Initial
@@ -143,11 +137,7 @@ class MusicViewModel(
                 }
 
                 is MusicEvent.PlayOnlySong -> {
-                    currentSelectedAudio = event.audio
-                    audioId = event.audio.id.toInt()
-                    displayName = event.audio.displayName
-                    artist = event.audio.artist
-                    duration = event.audio.duration.toLong()
+                    updateSelectedAudio(event.audio)
                     audioService.onPlayerEvents(
                         OnAudioSongPlay(event.audio.toMediaItem()),
                         homeSongAudio = event.audio
@@ -169,7 +159,6 @@ class MusicViewModel(
                         homeSongAudio = currentSelectedAudio,
                         seekPosition = (duration * event.seekto).toLong()
                     )
-                    Log.d("player" , "$isPlaying   $duration")
                 }
 
                 MusicEvent.SeekToNext -> {
@@ -186,30 +175,24 @@ class MusicViewModel(
                 )
 
                 is MusicEvent.SelectedAudioChange -> {
-                    currentSelectedAudio = event.audio
-                    audioId = event.audio.id.toInt()
-                    displayName = event.audio.displayName
-                    artist = event.audio.artist
-                    duration = event.audio.duration.toLong()
+                    this@MusicViewModel.audioList = event.audioList
+                    updateSelectedAudio(event.audio)
+                    Log.d("currentPlaying" , "current Selected Audio $currentSelectedAudio   this is ${event.audio}")
                     audioService.onPlayerEvents(
                         SelectedAudioChange,
                         homeSongAudio = event.audio,
-                        audioList = audioList
+                        audioList = event.audioList
                     )
                 }
 
                 is MusicEvent.SelectedAudioIndex -> {
-                    val audio = audioList.getOrNull(event.index)
+                    val audio = this@MusicViewModel.audioList.getOrNull(event.index)
                     if (audio != null) {
-                        currentSelectedAudio = audio
-                        audioId = audio.id.toInt()
-                        displayName = audio.displayName
-                        artist = audio.artist
-                        duration = audio.duration.toLong()
+                        updateSelectedAudio(audio)
                         audioService.onPlayerEvents(
                             SelectedAudioChange,
                             homeSongAudio = audio,
-                            audioList = audioList
+                            audioList = this@MusicViewModel.audioList
                         )
                     }
                 }
@@ -277,7 +260,7 @@ class MusicViewModel(
 
     private fun calculateProgress(currentProgress: Long) {
         Log.d("player" , "state $currentProgress  and dur $duration")
-        progress = if (currentProgress > 0) {
+        progress = if (duration > 0) {
             (currentProgress.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
         } else 0f
 
@@ -285,21 +268,29 @@ class MusicViewModel(
 
     private fun loadAudioData() {
         viewModelScope.launch {
-            repository.getAllAudioFilesFromDb().collect{ audioFiles ->
+            repository.getAllAudioFilesFromDb().collect { audioFiles ->
                 this@MusicViewModel.audioList = audioFiles
-                
-                // Restore selection based on saved audioId
-                audioFiles.find { it.id.toInt() == audioId }?.let {
-                    currentSelectedAudio = it
-                    displayName = it.displayName
-                    artist = it.artist
-                    duration = it.duration.toLong()
+                val currentMediaId = audioService.currentMediaItem?.mediaId
+                if (currentMediaId != null) {
+                    audioFiles.find { it.id.toString() == currentMediaId }?.let {
+                        updateSelectedAudio(it)
+                    }
+                } else {
+                    audioFiles.find { it.id.toInt() == audioId }?.let {
+                        updateSelectedAudio(it)
+                    }
                 }
-
-                val mediaItems = audioFiles.map { it.toMediaItem() }
-                setMediaItems(mediaItems , playWhenReady = false)
             }
         }
+    }
+
+    private fun updateSelectedAudio(song: AudioFile) {
+        currentSelectedAudio = song
+        audioId = song.id.toInt()
+        duration = song.duration.toLong()
+        displayName = song.displayName
+        artist = song.artist
+        albumIdForArt = song.albumIdForArt.toString()
     }
 
     private fun loadPlaylistData() {

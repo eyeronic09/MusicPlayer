@@ -135,8 +135,8 @@ fun BottomBarPlayerPreview() {
         onPrevious = {},
         onRepeat = {},
             repeatMode = Player.REPEAT_MODE_OFF,
-        isShuffleEnabled = TODO(),
-        onShuffle = TODO(),
-        artist = TODO(),
+        isShuffleEnabled = false,
+        onShuffle = {},
+        artist = "Sample Artist",
     )
 }

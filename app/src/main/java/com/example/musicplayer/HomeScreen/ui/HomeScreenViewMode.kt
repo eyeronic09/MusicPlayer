@@ -32,7 +32,7 @@ data class HomeScreenUIState(
 
 
 sealed interface HomeUiEffect {
-    data class showToast(val message : String) : HomeUiEffect
+    data class ShowToast(val message : String) : HomeUiEffect
 
 }
 sealed interface HomeEvent {
@@ -128,7 +128,7 @@ class HomeScreenViewModel(private val repository: MusicRepository , private val 
                     playlistRepository.insertSongFromPlaylist(audioFile = event.Audio ,
                         event.playlistId
                     )
-                    _uiEffect.emit(showToast("Added  to playlist"))
+                    _uiEffect.emit(ShowToast("Added  to playlist"))
                 }
             }
 

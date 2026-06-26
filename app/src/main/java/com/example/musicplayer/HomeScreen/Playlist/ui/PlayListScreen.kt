@@ -2,6 +2,7 @@ package com.example.musicplayer.HomeScreen.Playlist.ui
 
 import android.util.Log
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +23,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
@@ -104,35 +106,40 @@ fun PlaylistScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
 
-        when {
-            uiState.playList.isNotEmpty() -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                ) {
-                    items(uiState.playList) { playlist ->
-                        Text(
-                            text = playlist.playListName,
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .clickable {
-                                    Log.d("PlaylistScreen", "Playlist ID: ${playlist.playlistId}")
-                                    nav.push(PlaylistAllSong(playlist = playlist.playlistId))
-                                }
-                        )
-                        Button(onClick = {
-                            onMusicEvent(MusicEvent.PlayPlaylist(playlist.playlistId))
-                            Log.d("PlaylistScreen", "Playlist  of Play button ID: ${playlist.playlistId}")
-                        }) {
-                            Text(text = "play")
-                        }
-
+        if (uiState.playList.isNotEmpty()) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                items(uiState.playList) { playlist ->
+                    Text(
+                        text = playlist.playListName,
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .clickable {
+                                Log.d("PlaylistScreen", "Playlist ID: ${playlist.playlistId}")
+                                nav.push(PlaylistAllSong(playlist = playlist.playlistId))
+                            }
+                    )
+                    Button(onClick = {
+                        onMusicEvent(MusicEvent.PlayPlaylist(playlist.playlistId))
+                        Log.d("PlaylistScreen", "Playlist  of Play button ID: ${playlist.playlistId}")
+                    }) {
+                        Text(text = "play")
                     }
+
                 }
             }
-
-
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = "No playlists found")
+            }
         }
     }
 

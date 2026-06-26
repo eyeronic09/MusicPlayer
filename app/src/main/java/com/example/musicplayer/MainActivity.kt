@@ -24,7 +24,9 @@ import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 import com.example.musicplayer.HomeScreen.ui.HomeScreenTab
 import com.example.musicplayer.MusicPlayerScreen.UI.MediaPlayerTab
+import com.example.musicplayer.MusicPlayerScreen.UI.MusicViewModel
 import com.example.musicplayer.ui.theme.MusicPlayerTheme
+import org.koin.androidx.compose.koinViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,7 +52,9 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     ) { innerPadding ->
-                        Box(modifier = Modifier.padding(innerPadding).consumeWindowInsets(innerPadding)) {
+                        Box(modifier = Modifier
+                            .padding(innerPadding)
+                            .consumeWindowInsets(innerPadding)) {
                             CurrentTab()
                         }
                     }

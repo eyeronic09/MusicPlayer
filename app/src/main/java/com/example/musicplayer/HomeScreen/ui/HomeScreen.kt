@@ -96,9 +96,10 @@ fun HomeScreenRoot(
     val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     LaunchedEffect(Unit) {
+
         homeViewModel.uiEffect.collect {  effect ->
             when(effect){
-                is HomeUiEffect.showToast -> {
+                is HomeUiEffect.ShowToast -> {
                     Toast.makeText(context, effect.message, Toast.LENGTH_LONG).show()
                 }
             }
@@ -237,8 +238,8 @@ fun HomeScreen(
                 }
             }
         },
-        bottomBar = {
-            if (currentPlayingAudio.id != -1L) {
+        bottomBar = if (currentPlayingAudio.id != -1L) {
+            {
                 BottomBarPlayer(
                     displayName = displayName,
                     artist = artist,
@@ -255,6 +256,8 @@ fun HomeScreen(
                     onShuffle = onShuffle
                 )
             }
+        } else {
+            {}
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
@@ -274,7 +277,10 @@ fun HomeScreen(
                             AudioItem(
                                 audio = audio,
                                 isSelected = { audio.id == currentPlayingAudio.id },
-                                onItemClick = { onItemClick(audio) },
+                                onItemClick = {
+                                    onItemClick(audio)
+                                    Log.d("currentPlaying" , "on Item Clicked on $index ${audio.toString()}")
+                                },
                                 onAddToPlaylist = {
                                     selectedAudio = audio
                                     showBottomSheet = true

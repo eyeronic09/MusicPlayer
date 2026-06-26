@@ -1,5 +1,6 @@
 package com.example.musicplayer.MusicPlayerScreen.UI
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +26,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +41,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
+import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import coil.compose.AsyncImage
@@ -64,33 +67,41 @@ object MediaPlayerTab : Tab {
 
     @Composable
     override fun Content() {
-        val viewModel: MusicViewModel = koinViewModel()
-        val context = LocalContext.current
-        LaunchedEffect(Unit) {
-            viewModel.uiEffect.collect { effect ->
-                when (effect) {
-                    is uiToastMessage.meassage -> {
-                        Toast.makeText(context , effect.msg , Toast.LENGTH_LONG).show()
+        val tabNavigator = LocalTabNavigator.current
+
+        // The 'key' function forces the entire UI inside it to be RECREATED 
+        // whenever the value of the key changes. Using tabNavigator.current
+        // ensures a fresh recomposition whenever you switch to this tab.
+        key(tabNavigator.current) {
+            val viewModel: MusicViewModel = koinViewModel()
+            val context = LocalContext.current
+
+            LaunchedEffect(Unit) {
+                viewModel.uiEffect.collect { effect ->
+                    when (effect) {
+                        is uiToastMessage.meassage -> {
+                            Toast.makeText(context, effect.msg, Toast.LENGTH_LONG).show()
+                        }
                     }
                 }
             }
+            MediaPlayerScreenContent(
+                displayName = viewModel.displayName,
+                progress = viewModel.progress,
+                onProgress = { viewModel.onEvent(MusicEvent.UpdateProgress(it)) },
+                isAudioPlaying = viewModel.isPlaying,
+                audio = viewModel.currentSelectedAudio,
+                repeatMode = viewModel.repeatMode,
+                isShuffleEnabled = viewModel.isShuffleEnabled,
+                onStart = { viewModel.onEvent(MusicEvent.PlayPause) },
+                onNext = { viewModel.onEvent(MusicEvent.SeekToNext) },
+                onPrevious = {
+                    viewModel.onEvent(MusicEvent.SeekToPrevious)
+                },
+                onRepeat = { viewModel.onEvent(MusicEvent.ToggleRepeat) },
+                onShuffle = { viewModel.onEvent(MusicEvent.ToggleShuffle) }
+            )
         }
-        MediaPlayerScreenContent(
-            displayName = viewModel.displayName,
-            progress = viewModel.progress,
-            onProgress = { viewModel.onEvent(MusicEvent.UpdateProgress(it)) },
-            isAudioPlaying = viewModel.isPlaying,
-            audio = viewModel.currentSelectedAudio,
-            repeatMode = viewModel.repeatMode,
-            isShuffleEnabled = viewModel.isShuffleEnabled,
-            onStart = { viewModel.onEvent(MusicEvent.PlayPause) },
-            onNext = { viewModel.onEvent(MusicEvent.SeekToNext) },
-            onPrevious = {
-                viewModel.onEvent(MusicEvent.SeekToPrevious)
-            },
-            onRepeat = { viewModel.onEvent(MusicEvent.ToggleRepeat) },
-            onShuffle = { viewModel.onEvent(MusicEvent.ToggleShuffle) }
-        )
     }
 }
 
@@ -109,6 +120,8 @@ fun MediaPlayerScreenContent(
     onRepeat: () -> Unit,
     onShuffle: () -> Unit
 ) {
+    
+
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->

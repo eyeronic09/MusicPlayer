@@ -20,8 +20,11 @@ import kotlin.time.Duration.Companion.milliseconds
 class AudioServiceHandler(
     private val exoPlayer: ExoPlayer
 ) : Player.Listener {
-    private val _playerState = MutableSharedFlow<AudioState>(1 )
+    private val _playerState = MutableSharedFlow<AudioState>(1)
     val playerState = _playerState.asSharedFlow()
+
+    val currentMediaItem: MediaItem?
+        get() = exoPlayer.currentMediaItem
 
     private var job: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main)
@@ -69,40 +72,28 @@ class AudioServiceHandler(
             PlayerEvent.PlayPause -> playOrPause()
             PlayerEvent.Stop -> {
                 exoPlayer.stop()
-                stopProgressUpdate()
             }
 
             PlayerEvent.SelectedAudioChange -> {
-                val mediaItems = audioList.map { it.toMediaItem() }
-
-                val currentQueueIds = List(exoPlayer.mediaItemCount) { i -> exoPlayer.getMediaItemAt(i).mediaId }
-                val newQueueIds = mediaItems.map { it.mediaId }
-
-                // 2. Only reload the list if it's actually different (saves memory/time)
-                if (currentQueueIds != newQueueIds && mediaItems.isNotEmpty()) {
-                    exoPlayer.setMediaItems(mediaItems)
-                }
-
-                // 3. Find the ID in the list to get the NEW index
                 val index = audioList.indexOfFirst { it.id == homeSongAudio.id }
+                Log.d("AudioServiceHandler", "Selected index: $index for song ${homeSongAudio.displayName}")
 
                 if (index != -1) {
-                    // Jump to the calculated index
-                    exoPlayer.seekTo(index, 0)
-                } else if (exoPlayer.mediaItemCount == 0) {
-                    // Fallback: If queue is empty, just play this one song
+                    val mediaItems = audioList.map { it.toMediaItem() }
+                    exoPlayer.setMediaItems(mediaItems, index, 0L)
+                } else {
+                    // Fallback: If not in list, just play this one song
                     exoPlayer.setMediaItem(homeSongAudio.toMediaItem())
                 }
+
                 exoPlayer.prepare()
                 exoPlayer.play()
-                startProgressUpdate()
             }
 
             is PlayerEvent.OnAudioSongPlay -> {
                 exoPlayer.setMediaItem(playerEvent.mediaItem)
                 exoPlayer.prepare()
                 exoPlayer.play()
-                startProgressUpdate()
             }
 
             PlayerEvent.ToggleShuffle -> {
@@ -117,6 +108,13 @@ class AudioServiceHandler(
 
 
 
+    }
+
+    override fun onPlaybackStateChanged(playbackState: Int) {
+        super.onPlaybackStateChanged(playbackState)
+        if (playbackState == Player.STATE_READY) {
+            _playerState.tryEmit(Ready(exoPlayer.duration))
+        }
     }
 
     override fun onRepeatModeChanged(repeatMode: Int) {
@@ -169,13 +167,9 @@ class AudioServiceHandler(
     private fun playOrPause() {
         if (exoPlayer.isPlaying) {
             exoPlayer.pause()
-            _playerState.tryEmit(Playing(isPlaying = false))
-            stopProgressUpdate()
         } else {
             exoPlayer.prepare()
             exoPlayer.play()
-            _playerState.tryEmit(Playing(isPlaying = true))
-            startProgressUpdate()
         }
     }
 }
