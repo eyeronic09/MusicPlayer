@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import org.koin.core.time.TimeInMillis
 
 private val audioDummy = AudioFile(
     id = -1,
@@ -87,7 +88,7 @@ class MusicViewModel(
                         val song = audioList.find { it.id.toString() == state.mediaItem?.mediaId }
                         Log.d("currentPlaying" , song.toString())
                         if (song != null) {
-                            updateSelectedAudio(song)
+                            updateSelectedAudioAsState(song)
                         }
                     }
                     AudioState.Initial -> _uiState.value = UiState.Initial
@@ -118,36 +119,20 @@ class MusicViewModel(
     fun onEvent(event: MusicEvent) {
         viewModelScope.launch {
             when (event) {
-                MusicEvent.Backward -> audioService.onPlayerEvents(
-                    Backward,
-                    homeSongAudio = currentSelectedAudio
-                )
+                MusicEvent.Backward -> audioService.onPlayerEvents(Backward)
 
-                MusicEvent.Forward -> audioService.onPlayerEvents(
-                    Forward,
-                    homeSongAudio = currentSelectedAudio
-                )
+                MusicEvent.Forward -> audioService.onPlayerEvents(Forward)
 
                 is MusicEvent.LongUpdateProgress -> {
-                    audioService.onPlayerEvents(
-                        SeekTo,
-                        homeSongAudio = currentSelectedAudio,
-                        seekPosition = event.newProgress
-                    )
+                    audioService.onPlayerEvents(SeekTo(event.newProgress))
                 }
 
                 is MusicEvent.PlayOnlySong -> {
-                    updateSelectedAudio(event.audio)
-                    audioService.onPlayerEvents(
-                        OnAudioSongPlay(event.audio.toMediaItem()),
-                        homeSongAudio = event.audio
-                    )
+                    updateSelectedAudioAsState(event.audio)
+                    audioService.onPlayerEvents(OnAudioSongPlay(event.audio.toMediaItem()))
                 }
 
-                MusicEvent.PlayPause -> audioService.onPlayerEvents(
-                    PlayPause,
-                    homeSongAudio = currentSelectedAudio
-                )
+                MusicEvent.PlayPause -> audioService.onPlayerEvents(PlayPause)
 
                 is MusicEvent.PlayPlaylist -> {
                     playPlaylist(event.playlist)
@@ -155,44 +140,37 @@ class MusicViewModel(
 
                 is MusicEvent.SeekTo -> {
                     audioService.onPlayerEvents(
-                        SeekTo,
-                        homeSongAudio = currentSelectedAudio,
-                        seekPosition = (duration * event.seekto).toLong()
+                        SeekTo((duration * event.seekto).toLong())
                     )
                 }
 
                 MusicEvent.SeekToNext -> {
-                    audioService.onPlayerEvents(
-                        SeekToNext,
-                        homeSongAudio = currentSelectedAudio
-                    )
-
+                    audioService.onPlayerEvents(SeekToNext)
                 }
 
-                MusicEvent.SeekToPrevious -> audioService.onPlayerEvents(
-                    SeekToPrevious,
-                    homeSongAudio = currentSelectedAudio
-                )
+                MusicEvent.SeekToPrevious -> audioService.onPlayerEvents(SeekToPrevious)
 
                 is MusicEvent.SelectedAudioChange -> {
                     this@MusicViewModel.audioList = event.audioList
-                    updateSelectedAudio(event.audio)
+                    updateSelectedAudioAsState(event.audio)
                     Log.d("currentPlaying" , "current Selected Audio $currentSelectedAudio   this is ${event.audio}")
                     audioService.onPlayerEvents(
-                        SelectedAudioChange,
-                        homeSongAudio = event.audio,
-                        audioList = event.audioList
+                        SelectedAudioChange(
+                            homeSongAudio = event.audio,
+                            audioList = event.audioList
+                        )
                     )
                 }
 
                 is MusicEvent.SelectedAudioIndex -> {
                     val audio = this@MusicViewModel.audioList.getOrNull(event.index)
                     if (audio != null) {
-                        updateSelectedAudio(audio)
+                        updateSelectedAudioAsState(audio)
                         audioService.onPlayerEvents(
-                            SelectedAudioChange,
-                            homeSongAudio = audio,
-                            audioList = this@MusicViewModel.audioList
+                            SelectedAudioChange(
+                                homeSongAudio = audio,
+                                audioList = this@MusicViewModel.audioList
+                            )
                         )
                     }
                 }
@@ -201,35 +179,40 @@ class MusicViewModel(
                     shufflePlaylist(event.playlist)
                 }
 
-                MusicEvent.Stop -> audioService.onPlayerEvents(
-                    Stop,
-                    homeSongAudio = currentSelectedAudio
-                )
+                MusicEvent.Stop -> audioService.onPlayerEvents(Stop)
 
-                MusicEvent.ToggleRepeat -> audioService.onPlayerEvents(
-                    ToggleRepeat,
-                    homeSongAudio = currentSelectedAudio
-                )
+                is MusicEvent.PlaythisNext -> {
+                    val currentIndex = audioService.currentMediaItemIndex
+                    audioService.onPlayerEvents(PlaythisNext(event.mediaItem.toMediaItem()))
+                    Log.d("currentPlaying", "Play next: ${event.mediaItem.displayName} at index $currentIndex")
+                }
 
-                MusicEvent.ToggleShuffle -> audioService.onPlayerEvents(
-                    ToggleShuffle,
-                    homeSongAudio = currentSelectedAudio
-                )
+                MusicEvent.ToggleRepeat -> {
+                    audioService.onPlayerEvents(ToggleRepeat)
+                }
+
+                MusicEvent.ToggleShuffle -> {
+                    audioService.onPlayerEvents(ToggleShuffle)
+                }
 
                 is MusicEvent.UpdateProgress -> {
                     progress = event.newProgress
-                    audioService.onPlayerEvents(
-                        UpdateProgress(
-                            newProgress = event.newProgress
-                        ),
-                        homeSongAudio = currentSelectedAudio
-                    )
+                    audioService.onPlayerEvents(UpdateProgress(newProgress = event.newProgress))
                 }
 
+                is MusicEvent.SleepTimer -> {
+                    startSleepTimer(event.millis)
+                }
             }
         }
     }
-
+    private fun startSleepTimer(durationMs: Int) {
+        val intent = Intent(context, JetAudioService::class.java).apply {
+            action = "START_SLEEP_TIMER"
+            putExtra("TIMER_DURATION_MS", durationMs.toLong())
+        }
+        context.startService(intent)
+    }
     private fun playPlaylist(id : Long ){
         viewModelScope.launch {
             playlist.getSongsInPlaylist(id).collect{
@@ -273,18 +256,18 @@ class MusicViewModel(
                 val currentMediaId = audioService.currentMediaItem?.mediaId
                 if (currentMediaId != null) {
                     audioFiles.find { it.id.toString() == currentMediaId }?.let {
-                        updateSelectedAudio(it)
+                        updateSelectedAudioAsState(it)
                     }
                 } else {
                     audioFiles.find { it.id.toInt() == audioId }?.let {
-                        updateSelectedAudio(it)
+                        updateSelectedAudioAsState(it)
                     }
                 }
             }
         }
     }
 
-    private fun updateSelectedAudio(song: AudioFile) {
+    private fun updateSelectedAudioAsState(song: AudioFile) {
         currentSelectedAudio = song
         audioId = song.id.toInt()
         duration = song.duration.toLong()
@@ -309,7 +292,7 @@ class MusicViewModel(
         )
     }
     private fun onlyOnMediaItem(audio : MediaItem){
-        audioService.onPlayerEvents(OnAudioSongPlay(audio), homeSongAudio = currentSelectedAudio)
+        audioService.onPlayerEvents(OnAudioSongPlay(audio))
     }
 
     private fun startService() {
@@ -319,7 +302,7 @@ class MusicViewModel(
 }
 
 sealed class MusicEvent {
-
+    data class SleepTimer(val millis: Int) : MusicEvent()
     data class PlayPlaylist(val playlist : Long) : MusicEvent()
     data class ShufflePlaylist(val playlist: Long) : MusicEvent()
     data class PlayOnlySong(val audio: AudioFile) : MusicEvent()
@@ -334,6 +317,7 @@ sealed class MusicEvent {
     data class UpdateProgress(val newProgress: Float) : MusicEvent()
     data class LongUpdateProgress(val newProgress: Long) : MusicEvent()
     object Stop : MusicEvent()
+    data class PlaythisNext(val index : Int = 0, val mediaItem: AudioFile) : MusicEvent()
     data class SeekTo(val seekto: Float) : MusicEvent()
     data class SelectedAudioIndex(val index: Int) : MusicEvent()
 }

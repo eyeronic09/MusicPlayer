@@ -51,6 +51,7 @@ import org.koin.androidx.compose.koinViewModel
 import kotlin.math.floor
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.musicplayer.HomeScreen.compontent.Searchingbar
+import com.example.musicplayer.MusicPlayerScreen.mapper.toMediaItem
 
 enum class HomeTabs(val title: String) {
     Songs("Songs"),
@@ -119,6 +120,11 @@ fun HomeScreenRoot(
             val currentList = if (uiState.isSearching) uiState.filteredItem else uiState.allSongs
             musicViewModel.onEvent(MusicEvent.SelectedAudioChange(clickedSong, currentList))
         },
+        onPlaythisNext = { audio ->
+            musicViewModel.onEvent(MusicEvent.PlaythisNext(
+                mediaItem = audio
+            ))
+        },
         onNext = { musicViewModel.onEvent(MusicEvent.SeekToNext) },
         onPrevious = { musicViewModel.onEvent(MusicEvent.SeekToPrevious) },
         playList = musicViewModel.playlistList,
@@ -162,6 +168,7 @@ fun HomeScreen(
     onRepeat: () -> Unit,
     onShuffle: () -> Unit,
     onItemClick: (AudioFile) -> Unit,
+    onPlaythisNext: (AudioFile) -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
     onAddToPlaylist: (AudioFile, Long) -> Unit,
@@ -279,11 +286,18 @@ fun HomeScreen(
                                 isSelected = { audio.id == currentPlayingAudio.id },
                                 onItemClick = {
                                     onItemClick(audio)
-                                    Log.d("currentPlaying" , "on Item Clicked on $index ${audio.toString()}")
+
                                 },
                                 onAddToPlaylist = {
                                     selectedAudio = audio
                                     showBottomSheet = true
+                                },
+                                onPlaythisNext = {
+                                    onPlaythisNext(audio)
+                                    Log.d(
+                                        "currentPlaying",
+                                        "on Item Clicked on $index ${audio.toString()}"
+                                    )
                                 }
                             )
                         }
@@ -329,6 +343,7 @@ fun HomeScreenPreview() {
             onRepeat = {},
             onShuffle = {},
             onItemClick = {},
+            onPlaythisNext = {},
             onNext = {},
             onPrevious = {},
             onAddToPlaylist = { _, _ -> },

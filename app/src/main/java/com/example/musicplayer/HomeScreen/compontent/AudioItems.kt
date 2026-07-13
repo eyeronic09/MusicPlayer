@@ -45,6 +45,7 @@ fun AudioItem(
     audio: AudioFile,
     isSelected: () -> Boolean,
     onItemClick: () -> Unit = {},
+    onPlaythisNext : () -> Unit = {},
     onAddToPlaylist: (() -> Unit)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -111,6 +112,13 @@ fun AudioItem(
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {
+                    DropdownMenuItem(
+                        text = { Text("Play Next") },
+                        onClick = {
+                            onPlaythisNext()
+                            expanded = false
+                        }
+                    )
                     if (onAddToPlaylist != null) {
                         DropdownMenuItem(
                             text = { Text("Add to Playlist") },

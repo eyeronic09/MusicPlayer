@@ -6,6 +6,13 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.example.musicplayer.MusicPlayerScreen.notification.NotificationManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 
 class JetAudioService : MediaSessionService() {
@@ -14,6 +21,27 @@ class JetAudioService : MediaSessionService() {
     private val notificationManager: NotificationManager by inject()
     
     private var mediaSession: MediaSession? = null
+    private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var timerJob: Job? = null
+
+    private fun shutdownAndDestroy() {
+        if (exoPlayer.isPlaying) {
+            exoPlayer.pause()
+        }
+        stopSelf()
+    }
+
+    private fun startKillTimer(durationInMillisecond: Long) {
+        stopKillTimer() // Cancel any existing job first
+        timerJob = serviceScope.launch {
+            delay(durationInMillisecond)
+            shutdownAndDestroy()
+        }
+    }
+
+    private fun stopKillTimer() {
+        timerJob?.cancel()
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -25,6 +53,16 @@ class JetAudioService : MediaSessionService() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val action = intent?.action
+        if (action == "START_SLEEP_TIMER") {
+            val duration = intent.getLongExtra("TIMER_DURATION_MS", 0L)
+            if (duration > 0) {
+                startKillTimer(duration)
+            } else {
+                stopKillTimer()
+            }
+        }
+
         mediaSession?.let {
             notificationManager.startNotificationService(
                 mediaSession = it,
@@ -35,6 +73,7 @@ class JetAudioService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        serviceScope.cancel()
         mediaSession?.run {
             // DO NOT release the singleton player here, just stop it
             if (player.playbackState != Player.STATE_IDLE) {

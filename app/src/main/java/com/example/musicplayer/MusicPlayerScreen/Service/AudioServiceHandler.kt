@@ -26,17 +26,19 @@ class AudioServiceHandler(
     val currentMediaItem: MediaItem?
         get() = exoPlayer.currentMediaItem
 
+    val currentMediaItemIndex: Int
+        get() = exoPlayer.currentMediaItemIndex
+
     private var job: Job? = null
-    private val scope = CoroutineScope(Dispatchers.Main)
+    private val progressJob = CoroutineScope(Dispatchers.Main)
+
 
     init {
         exoPlayer.addListener(this)
     }
 
-    fun addMediaItem(mediaItem: MediaItem) {
-        exoPlayer.addMediaItem(mediaItem)
-        exoPlayer.prepare()
-    }
+
+
 
     fun setMediaItems(mediaItems: List<MediaItem> , playWhenReady : Boolean = false) {
         Log.d("AudioServiceHandler", "Setting ${mediaItems.size} media items")
@@ -48,10 +50,7 @@ class AudioServiceHandler(
     }
 
     fun onPlayerEvents(
-        playerEvent: PlayerEvent,
-        homeSongAudio: AudioFile,
-        audioList: List<AudioFile> = emptyList(),
-        seekPosition: Long = 0
+        playerEvent: PlayerEvent
     ) {
 
         when (playerEvent) {
@@ -59,8 +58,8 @@ class AudioServiceHandler(
             PlayerEvent.Forward -> exoPlayer.seekForward()
             PlayerEvent.SeekToNext -> exoPlayer.seekToNext()
             PlayerEvent.SeekToPrevious -> exoPlayer.seekToPrevious()
-            PlayerEvent.SeekTo -> {
-                exoPlayer.seekTo(seekPosition)
+            is PlayerEvent.SeekTo -> {
+                exoPlayer.seekTo(playerEvent.seekPosition)
             }
             PlayerEvent.ToggleRepeat -> {
                 exoPlayer.repeatMode = when (exoPlayer.repeatMode) {
@@ -74,16 +73,16 @@ class AudioServiceHandler(
                 exoPlayer.stop()
             }
 
-            PlayerEvent.SelectedAudioChange -> {
-                val index = audioList.indexOfFirst { it.id == homeSongAudio.id }
-                Log.d("AudioServiceHandler", "Selected index: $index for song ${homeSongAudio.displayName}")
+            is PlayerEvent.SelectedAudioChange -> {
+                val index = playerEvent.audioList.indexOfFirst { it.id == playerEvent.homeSongAudio.id }
+                Log.d("AudioServiceHandler", "Selected index: $index for song ${playerEvent.homeSongAudio.displayName}")
 
                 if (index != -1) {
-                    val mediaItems = audioList.map { it.toMediaItem() }
+                    val mediaItems = playerEvent.audioList.map { it.toMediaItem() }
                     exoPlayer.setMediaItems(mediaItems, index, 0L)
                 } else {
                     // Fallback: If not in list, just play this one song
-                    exoPlayer.setMediaItem(homeSongAudio.toMediaItem())
+                    exoPlayer.setMediaItem(playerEvent.homeSongAudio.toMediaItem())
                 }
 
                 exoPlayer.prepare()
@@ -104,10 +103,17 @@ class AudioServiceHandler(
                     exoPlayer.seekTo((exoPlayer.duration * playerEvent.newProgress).toLong())
                 }
             }
+
+            is PlayerEvent.PlaythisNext -> {
+                exoPlayer.addMediaItem(currentMediaItemIndex + 1 ,  playerEvent.mediaItem)
+                for (i in 0 until exoPlayer.mediaItemCount) {
+                    Log.d(
+                        "Queue",
+                        "$i -> ${exoPlayer.getMediaItemAt(i).mediaId}"
+                    )
+                }
+            }
         }
-
-
-
     }
 
     override fun onPlaybackStateChanged(playbackState: Int) {
@@ -150,7 +156,7 @@ class AudioServiceHandler(
     }
     private fun startProgressUpdate() {
         job?.cancel()
-        job = scope.launch {
+        job = progressJob.launch {
             while (true) {
                 if (exoPlayer.isPlaying) {
                     _playerState.tryEmit(Progress(exoPlayer.currentPosition))
@@ -176,16 +182,17 @@ class AudioServiceHandler(
 
 sealed class PlayerEvent {
     object PlayPause : PlayerEvent()
-    object SelectedAudioChange : PlayerEvent()
+    data class SelectedAudioChange(val homeSongAudio: AudioFile, val audioList: List<AudioFile>) : PlayerEvent()
     object Backward : PlayerEvent()
     object SeekToNext : PlayerEvent()
     object SeekToPrevious : PlayerEvent()
     object Forward : PlayerEvent()
     object ToggleRepeat : PlayerEvent()
-    object SeekTo : PlayerEvent()
+    data class SeekTo(val seekPosition: Long) : PlayerEvent()
     object Stop : PlayerEvent()
     object ToggleShuffle : PlayerEvent()
     data class UpdateProgress(val newProgress: Float) : PlayerEvent()
+    data class PlaythisNext(val mediaItem: MediaItem) : PlayerEvent()
     data class OnAudioSongPlay(val mediaItem : MediaItem) : PlayerEvent()
 }
 
