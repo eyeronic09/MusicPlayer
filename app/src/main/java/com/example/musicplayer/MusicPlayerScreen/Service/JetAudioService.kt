@@ -1,6 +1,7 @@
 package com.example.musicplayer.MusicPlayerScreen.Service
 
 import android.content.Intent
+import android.util.Log
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
@@ -14,6 +15,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
+import kotlin.time.Duration.Companion.milliseconds
 
 class JetAudioService : MediaSessionService() {
 
@@ -32,11 +34,12 @@ class JetAudioService : MediaSessionService() {
     }
 
     private fun startKillTimer(durationInMillisecond: Long) {
-        stopKillTimer() // Cancel any existing job first
+        stopKillTimer()
         timerJob = serviceScope.launch {
-            delay(durationInMillisecond)
+            delay(durationInMillisecond.milliseconds)
             shutdownAndDestroy()
         }
+        Log.d("timerJob", timerJob?.isActive.toString())
     }
 
     private fun stopKillTimer() {
@@ -58,6 +61,7 @@ class JetAudioService : MediaSessionService() {
             val duration = intent.getLongExtra("TIMER_DURATION_MS", 0L)
             if (duration > 0) {
                 startKillTimer(duration)
+                Log.d("timerJob" , duration.toString() )
             } else {
                 stopKillTimer()
             }
