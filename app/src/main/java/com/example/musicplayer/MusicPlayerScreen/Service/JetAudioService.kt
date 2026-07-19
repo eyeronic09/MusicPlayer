@@ -11,8 +11,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import kotlin.time.Duration.Companion.milliseconds
@@ -23,10 +23,12 @@ class JetAudioService : MediaSessionService() {
     private val notificationManager: NotificationManager by inject()
     
     private var mediaSession: MediaSession? = null
-    private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var serviceJob = SupervisorJob()
+    private var serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
     private var timerJob: Job? = null
 
     private fun shutdownAndDestroy() {
+        Log.d("JetAudioService", "shutdownAndDestroy called")
         if (exoPlayer.isPlaying) {
             exoPlayer.pause()
         }
@@ -34,20 +36,31 @@ class JetAudioService : MediaSessionService() {
     }
 
     private fun startKillTimer(durationInMillisecond: Long) {
+        Log.d("JetAudioService", "startKillTimer: duration = $durationInMillisecond ms")
         stopKillTimer()
+        
+        if (serviceJob.isCancelled) {
+            serviceJob = SupervisorJob()
+            serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
+        }
+
         timerJob = serviceScope.launch {
+            Log.d("JetAudioService", "Timer Job started. isActive: $isActive")
             delay(durationInMillisecond.milliseconds)
+            Log.d("JetAudioService", "Timer reached. Executing shutdown.")
             shutdownAndDestroy()
         }
-        Log.d("timerJob", timerJob?.isActive.toString())
+        Log.d("JetAudioService", "Timer Job scheduled. isActive: ${timerJob?.isActive}")
     }
 
     private fun stopKillTimer() {
+        Log.d("JetAudioService", "stopKillTimer called")
         timerJob?.cancel()
     }
 
     override fun onCreate() {
         super.onCreate()
+        Log.d("JetAudioService", "Service Created")
         mediaSession = MediaSession.Builder(this, exoPlayer).build()
     }
 
@@ -57,11 +70,13 @@ class JetAudioService : MediaSessionService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val action = intent?.action
+        Log.d("JetAudioService", "onStartCommand: action = $action")
+
         if (action == "START_SLEEP_TIMER") {
-            val duration = intent.getLongExtra("TIMER_DURATION_MS", 0L)
+            val duration = intent?.getLongExtra("TIMER_DURATION_MS", 0L) ?: 0L
+            Log.d("JetAudioService", "Sleep Timer Intent received: duration = $duration")
             if (duration > 0) {
                 startKillTimer(duration)
-                Log.d("timerJob" , duration.toString() )
             } else {
                 stopKillTimer()
             }
@@ -77,7 +92,7 @@ class JetAudioService : MediaSessionService() {
     }
 
     override fun onDestroy() {
-        serviceScope.cancel()
+        serviceJob.cancel()
         mediaSession?.run {
             // DO NOT release the singleton player here, just stop it
             if (player.playbackState != Player.STATE_IDLE) {

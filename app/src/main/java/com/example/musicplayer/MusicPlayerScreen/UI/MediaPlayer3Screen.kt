@@ -61,6 +61,7 @@ import com.example.musicplayer.HomeScreen.ui.timeStampToDuration
 import com.example.musicplayer.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.koin.androidx.compose.koinViewModel
+import kotlin.math.roundToLong
 
 object MediaPlayerTab : Tab {
     override val options: TabOptions
@@ -155,7 +156,8 @@ fun MediaPlayerScreenContent(
                                 "5 min" to 5,
                                 "15 min" to 15,
                                 "30 min" to 30,
-                                "60 min" to 60
+                                "60 min" to 60,
+                                "end of song" to audio.duration,
                             )
 
                             options.forEach { (label, minutes) ->
@@ -163,8 +165,8 @@ fun MediaPlayerScreenContent(
                                     text = { Text(label) },
                                     onClick = {
                                         expand = false
-                                        onSleepTimer(minutes?.let { it * 60 * 1000 } ?: 0)
-                                        Toast.makeText(context, "Timer set for $label", Toast.LENGTH_SHORT).show()
+                                        onSleepTimer(minutes?.let { it * 60 * 1000 } ?: audio.duration)
+                                        Toast.makeText(context, "Timer set for ${audio.duration}", Toast.LENGTH_SHORT).show()
                                     }
                                 )
                             }
