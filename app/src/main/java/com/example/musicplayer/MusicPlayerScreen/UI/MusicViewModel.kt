@@ -212,6 +212,8 @@ class MusicViewModel(
             putExtra("TIMER_DURATION_MS", durationMs.toLong())
         }
         context.startService(intent)
+        Log.d("TimerCheck", "Intent sent to JetAudioService with duration: $durationMs ms")
+
     }
     private fun playPlaylist(id : Long ){
         viewModelScope.launch {

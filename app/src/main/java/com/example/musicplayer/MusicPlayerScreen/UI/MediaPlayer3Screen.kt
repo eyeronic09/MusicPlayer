@@ -61,6 +61,8 @@ import com.example.musicplayer.HomeScreen.ui.timeStampToDuration
 import com.example.musicplayer.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.koin.androidx.compose.koinViewModel
+import kotlin.math.roundToLong
+import kotlin.time.Duration.Companion.milliseconds
 
 object MediaPlayerTab : Tab {
     override val options: TabOptions
@@ -152,19 +154,22 @@ fun MediaPlayerScreenContent(
                         ) {
                             val options = listOf(
                                 "Off" to null,
-                                "5 min" to 5,
-                                "15 min" to 15,
-                                "30 min" to 30,
-                                "60 min" to 60
+                                "5 min" to 5 * 60 * 1000L,
+                                "15 min" to 15 * 60 * 1000L,
+                                "30 min" to 30 * 60 * 1000L,
+                                "60 min" to 60 * 60 * 1000L,
+                                "End of song" to audio.duration.toLong() // Convert Int duration to Long
                             )
 
-                            options.forEach { (label, minutes) ->
+                            options.forEach { (label, millis) ->
                                 DropdownMenuItem(
                                     text = { Text(label) },
                                     onClick = {
                                         expand = false
-                                        onSleepTimer(minutes?.let { it * 60 * 1000 } ?: 0)
-                                        Toast.makeText(context, "Timer set for $label", Toast.LENGTH_SHORT).show()
+                                        val finalMillis = millis ?: 0L
+                                        onSleepTimer(finalMillis.toInt()) // Pass the result to your ViewModel
+                                        val toastText = if (finalMillis > 0) "Timer set for $label" else "Timer turned off"
+                                        Toast.makeText(context, toastText + "this  " +finalMillis, Toast.LENGTH_SHORT).show()
                                     }
                                 )
                             }
