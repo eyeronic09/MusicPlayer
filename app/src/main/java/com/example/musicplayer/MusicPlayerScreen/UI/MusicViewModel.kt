@@ -30,7 +30,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import org.koin.core.time.TimeInMillis
 
 private val audioDummy = AudioFile(
     id = -1,
@@ -201,15 +200,26 @@ class MusicViewModel(
                 }
 
                 is MusicEvent.SleepTimer -> {
-                    startSleepTimer(event.millis)
+                    startSleepTimer(
+                        durationMs = event.millis,
+                        currentSelectedAudio = event.currentSelectedAudio,
+                        isSetToEndOfSong = event.setToEndFile,
+                    )
                 }
             }
         }
     }
-    private fun startSleepTimer(durationMs: Int) {
-        val intent = Intent(context, JetAudioService::class.java).apply {
-            action = "START_SLEEP_TIMER"
-            putExtra("TIMER_DURATION_MS", durationMs.toLong())
+    private fun startSleepTimer(durationMs: Int , currentSelectedAudio: AudioFile , isSetToEndOfSong  : Boolean = false) {
+        val intent = if (!isSetToEndOfSong) {
+            Intent(context, JetAudioService::class.java).apply {
+                action = "START_SLEEP_TIMER"
+                putExtra("TIMER_DURATION_MS", durationMs.toLong())
+            }
+        } else {
+            Intent(context , JetAudioService::class.java ).apply {
+                action = "END_SONG_TIMER"
+                putExtra("CURRENT_SELECTED_AUDIO" , currentSelectedAudio)
+            }
         }
         context.startService(intent)
         Log.d("TimerCheck", "Intent sent to JetAudioService with duration: $durationMs ms")
@@ -304,7 +314,7 @@ class MusicViewModel(
 }
 
 sealed class MusicEvent {
-    data class SleepTimer(val millis: Int) : MusicEvent()
+    data class SleepTimer(val millis: Int , val currentSelectedAudio: AudioFile , val setToEndFile : Boolean) : MusicEvent()
     data class PlayPlaylist(val playlist : Long) : MusicEvent()
     data class ShufflePlaylist(val playlist: Long) : MusicEvent()
     data class PlayOnlySong(val audio: AudioFile) : MusicEvent()

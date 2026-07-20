@@ -1,11 +1,9 @@
 package com.example.musicplayer.MusicPlayerScreen.UI
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -23,7 +21,6 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBoxScope
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -59,10 +56,7 @@ import com.example.musicplayer.HomeScreen.compontent.MediaPlayerController
 import com.example.musicplayer.HomeScreen.domain.model.AudioFile
 import com.example.musicplayer.HomeScreen.ui.timeStampToDuration
 import com.example.musicplayer.R
-import kotlinx.coroutines.flow.MutableStateFlow
 import org.koin.androidx.compose.koinViewModel
-import kotlin.math.roundToLong
-import kotlin.time.Duration.Companion.milliseconds
 
 object MediaPlayerTab : Tab {
     override val options: TabOptions
@@ -113,7 +107,13 @@ object MediaPlayerTab : Tab {
                 },
                 onRepeat = { viewModel.onEvent(MusicEvent.ToggleRepeat) },
                 onShuffle = { viewModel.onEvent(MusicEvent.ToggleShuffle) },
-                onSleepTimer = { viewModel.onEvent(MusicEvent.SleepTimer(it)) }
+                onSleepTimer = { millis, audioFile, isEndSong -> 
+                viewModel.onEvent(MusicEvent.SleepTimer(
+                    millis,
+                    currentSelectedAudio = audioFile,
+                    setToEndFile = isEndSong,
+                )) 
+                }
             )
         }
     }
@@ -134,7 +134,7 @@ fun MediaPlayerScreenContent(
     onPrevious: () -> Unit,
     onRepeat: () -> Unit,
     onShuffle: () -> Unit,
-    onSleepTimer: (Int) -> Unit
+    onSleepTimer: (Int , AudioFile  , Boolean ) -> Unit
 ) {
     var expand by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -152,13 +152,14 @@ fun MediaPlayerScreenContent(
                             expanded = expand,
                             onDismissRequest = { expand = false }
                         ) {
-                            val options = listOf(
+                            // Explicitly type the list to ensure the compiler knows these are Ints
+                            val options: List<Pair<String, Int?>> = listOf(
                                 "Off" to null,
-                                "5 min" to 5 * 60 * 1000L,
-                                "15 min" to 15 * 60 * 1000L,
-                                "30 min" to 30 * 60 * 1000L,
-                                "60 min" to 60 * 60 * 1000L,
-                                "End of song" to audio.duration.toLong() // Convert Int duration to Long
+                                "5 min" to 5 * 60 * 1000,
+                                "15 min" to 15 * 60 * 1000,
+                                "30 min" to 30 * 60 * 1000,
+                                "60 min" to 60 * 60 * 1000,
+                                "End of song" to 0
                             )
 
                             options.forEach { (label, millis) ->
@@ -166,10 +167,18 @@ fun MediaPlayerScreenContent(
                                     text = { Text(label) },
                                     onClick = {
                                         expand = false
-                                        val finalMillis = millis ?: 0L
-                                        onSleepTimer(finalMillis.toInt()) // Pass the result to your ViewModel
-                                        val toastText = if (finalMillis > 0) "Timer set for $label" else "Timer turned off"
-                                        Toast.makeText(context, toastText + "this  " +finalMillis, Toast.LENGTH_SHORT).show()
+                                        val isEndOfSong = label == "End of song"
+                                        val finalMillis = millis ?: 0 // Safely converts Int? to Int
+
+                                        onSleepTimer(finalMillis, audio, isEndOfSong)
+
+                                        val toastText = when {
+                                            finalMillis > 0 -> "Timer set for $label"
+                                            isEndOfSong -> "Timer set for end of song"
+                                            else -> "Timer turned off"
+                                        }
+                                        Toast.makeText(context, toastText, Toast.LENGTH_SHORT)
+                                            .show()
                                     }
                                 )
                             }
@@ -309,6 +318,7 @@ fun MediaPlayerScreenContentPreview() {
         onPrevious = {},
         onRepeat = {},
         onShuffle = {},
-        onSleepTimer = {}
+        onSleepTimer = {} as (Int, AudioFile, Boolean) -> Unit,
+
     )
 }
