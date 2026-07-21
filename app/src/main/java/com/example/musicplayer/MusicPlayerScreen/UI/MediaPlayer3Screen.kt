@@ -152,7 +152,6 @@ fun MediaPlayerScreenContent(
                             expanded = expand,
                             onDismissRequest = { expand = false }
                         ) {
-                            // Explicitly type the list to ensure the compiler knows these are Ints
                             val options: List<Pair<String, Int?>> = listOf(
                                 "Off" to null,
                                 "5 min" to 5 * 60 * 1000,

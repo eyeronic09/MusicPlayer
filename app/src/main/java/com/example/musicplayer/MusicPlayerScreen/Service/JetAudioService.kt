@@ -34,7 +34,6 @@ class JetAudioService : MediaSessionService() {
     private var serviceJob = SupervisorJob()
     private var serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
     private var timerJob: Job? = null
-    private var currentMediaItem = mediaSession?.player?.currentMediaItem
 
 
     private fun shutdownAndDestroyAtEndTimer() {
@@ -44,13 +43,10 @@ class JetAudioService : MediaSessionService() {
 
     private val player = object : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-            super.onMediaItemTransition(mediaItem, reason)
             Log.d("JetAudioService", "onMediaItemTransition: stopAtEndOfSong = $stopAtEndOfSong, reason = $reason")
             if(stopAtEndOfSong){
                 shutdownAndDestroyAtEndTimer()
-                stopAtEndOfSong = false
             }
-
         }
     }
 
@@ -94,7 +90,7 @@ class JetAudioService : MediaSessionService() {
         Log.d("JetAudioService", "onStartCommand: action = $action")
 
         if (action == "START_SLEEP_TIMER") {
-            val duration = intent?.getLongExtra("TIMER_DURATION_MS", 0L) ?: 0L
+            val duration = intent.getLongExtra("TIMER_DURATION_MS", 0L)
             Log.d("JetAudioService", "Sleep Timer Intent received: duration = ${duration.milliseconds}")
             if (duration > 0) {
                 startKillTimer(duration)
