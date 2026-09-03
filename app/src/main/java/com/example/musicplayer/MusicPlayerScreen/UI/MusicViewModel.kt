@@ -20,6 +20,7 @@ import com.example.musicplayer.HomeScreen.domain.reposistory.MusicRepository
 import com.example.musicplayer.MusicPlayerScreen.Service.AudioServiceHandler
 import com.example.musicplayer.MusicPlayerScreen.Service.AudioState
 import com.example.musicplayer.MusicPlayerScreen.Service.JetAudioService
+import com.example.musicplayer.MusicPlayerScreen.Service.PlayerEvent
 import com.example.musicplayer.MusicPlayerScreen.Service.PlayerEvent.*
 import com.example.musicplayer.MusicPlayerScreen.mapper.toMediaItem
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -64,6 +65,11 @@ class MusicViewModel(
     var displayName by saveStateHandler.saveable { mutableStateOf("") }
     var artist by saveStateHandler.saveable { mutableStateOf("") }
 
+    val currentMediaItemIndex: Int
+        get() = audioService.currentMediaItemIndex
+
+
+
 
 
     private val _uiEffect = MutableSharedFlow<uiToastMessage>()
@@ -71,6 +77,8 @@ class MusicViewModel(
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Initial)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+
+
 
     init {
         viewModelScope.launch {
@@ -143,11 +151,12 @@ class MusicViewModel(
                     )
                 }
 
-                MusicEvent.SeekToNext -> {
+                is MusicEvent.SeekToNext -> {
                     audioService.onPlayerEvents(SeekToNext)
                 }
 
-                MusicEvent.SeekToPrevious -> audioService.onPlayerEvents(SeekToPrevious)
+
+                is MusicEvent.SeekToPrevious -> audioService.onPlayerEvents(SeekToPrevious)
 
                 is MusicEvent.SelectedAudioChange -> {
                     this@MusicViewModel.audioList = event.audioList
@@ -205,6 +214,13 @@ class MusicViewModel(
                         currentSelectedAudio = event.currentSelectedAudio,
                         isSetToEndOfSong = event.setToEndFile,
                     )
+                }
+                is MusicEvent.moveQueues -> {
+                    audioService.onPlayerEvents(PlayerEvent.onMoveQueueToNewPosition(event.fromIndex , event.toIndex))
+                }
+                is MusicEvent.OnRemoveFromQueue -> {
+                    Log.d("Queue Index" , "ok about to remove")
+                    audioService.onPlayerEvents(PlayerEvent.onRemoveFromQueue(event.index))
                 }
             }
         }
@@ -332,6 +348,8 @@ sealed class MusicEvent {
     data class PlaythisNext(val index : Int = 0, val mediaItem: AudioFile) : MusicEvent()
     data class SeekTo(val seekto: Float) : MusicEvent()
     data class SelectedAudioIndex(val index: Int) : MusicEvent()
+    data class OnRemoveFromQueue(val index : Int) : MusicEvent()
+    data class moveQueues(val fromIndex : Int , val  toIndex : Int  ) : MusicEvent()
 }
 
 sealed class UiState {

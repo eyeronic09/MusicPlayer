@@ -1,6 +1,7 @@
 package com.example.musicplayer.MusicPlayerScreen.Service
 
 import android.util.Log
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -54,10 +55,18 @@ class AudioServiceHandler(
     ) {
 
         when (playerEvent) {
-            PlayerEvent.Backward -> exoPlayer.seekBack()
-            PlayerEvent.Forward -> exoPlayer.seekForward()
-            PlayerEvent.SeekToNext -> exoPlayer.seekToNext()
-            PlayerEvent.SeekToPrevious -> exoPlayer.seekToPrevious()
+            PlayerEvent.Backward -> {
+                exoPlayer.seekBack()
+            }
+            PlayerEvent.Forward -> {
+                exoPlayer.seekForward()
+            }
+            PlayerEvent.SeekToNext -> {
+                exoPlayer.seekToNext()
+            }
+            PlayerEvent.SeekToPrevious -> {
+                exoPlayer.seekToPrevious()
+            }
             is PlayerEvent.SeekTo -> {
                 exoPlayer.seekTo(playerEvent.seekPosition)
             }
@@ -68,7 +77,9 @@ class AudioServiceHandler(
                     else -> Player.REPEAT_MODE_OFF
                 }
             }
-            PlayerEvent.PlayPause -> playOrPause()
+            PlayerEvent.PlayPause -> {
+                playOrPause()
+            }
             PlayerEvent.Stop -> {
                 exoPlayer.stop()
             }
@@ -113,6 +124,17 @@ class AudioServiceHandler(
                     )
                 }
             }
+
+            is PlayerEvent.onRemoveFromQueue -> {
+                if (playerEvent.index in 0 until exoPlayer.mediaItemCount){
+                    exoPlayer.removeMediaItem(playerEvent.index)
+                }
+            }
+
+            is PlayerEvent.onMoveQueueToNewPosition -> {
+                exoPlayer.moveMediaItem(playerEvent.fromIndex , playerEvent.toIndex)
+            }
+
         }
     }
 
@@ -194,6 +216,8 @@ sealed class PlayerEvent {
     data class UpdateProgress(val newProgress: Float) : PlayerEvent()
     data class PlaythisNext(val mediaItem: MediaItem) : PlayerEvent()
     data class OnAudioSongPlay(val mediaItem : MediaItem) : PlayerEvent()
+    data class onRemoveFromQueue(val index :  Int ) : PlayerEvent()
+    data class onMoveQueueToNewPosition(val fromIndex : Int  , val toIndex : Int) : PlayerEvent()
 }
 
 sealed class AudioState {

@@ -1,6 +1,9 @@
 package com.example.musicplayer.MusicPlayerScreen.UI
 
+import android.app.LauncherActivity
+import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,8 +15,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
@@ -23,7 +30,9 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -52,6 +61,7 @@ import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import coil.compose.AsyncImage
+import com.example.musicplayer.HomeScreen.compontent.AudioItem
 import com.example.musicplayer.HomeScreen.compontent.MediaPlayerController
 import com.example.musicplayer.HomeScreen.domain.model.AudioFile
 import com.example.musicplayer.HomeScreen.ui.timeStampToDuration
@@ -100,6 +110,8 @@ object MediaPlayerTab : Tab {
                 audio = viewModel.currentSelectedAudio,
                 repeatMode = viewModel.repeatMode,
                 isShuffleEnabled = viewModel.isShuffleEnabled,
+                queue = viewModel.audioList,
+                currentIndex = viewModel.currentMediaItemIndex,
                 onStart = { viewModel.onEvent(MusicEvent.PlayPause) },
                 onNext = { viewModel.onEvent(MusicEvent.SeekToNext) },
                 onPrevious = {
@@ -108,12 +120,18 @@ object MediaPlayerTab : Tab {
                 onRepeat = { viewModel.onEvent(MusicEvent.ToggleRepeat) },
                 onShuffle = { viewModel.onEvent(MusicEvent.ToggleShuffle) },
                 onSleepTimer = { millis, audioFile, isEndSong -> 
-                viewModel.onEvent(MusicEvent.SleepTimer(
-                    millis,
-                    currentSelectedAudio = audioFile,
-                    setToEndFile = isEndSong,
-                )) 
-                }
+                    viewModel.onEvent(MusicEvent.SleepTimer(
+                        millis,
+                        currentSelectedAudio = audioFile,
+                        setToEndFile = isEndSong,
+                    )) 
+                },
+                onTrackSelected = { index ->
+                    viewModel.onEvent(MusicEvent.SelectedAudioIndex(index))
+                },
+                onRemoveTrack = { index ->
+                    viewModel.onEvent(MusicEvent.OnRemoveFromQueue(index))
+                },
             )
         }
     }
@@ -129,21 +147,31 @@ fun MediaPlayerScreenContent(
     audio: AudioFile,
     repeatMode: Int,
     isShuffleEnabled: Boolean,
+    queue: List<AudioFile>,
+    currentIndex: Int,
     onStart: () -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
     onRepeat: () -> Unit,
     onShuffle: () -> Unit,
-    onSleepTimer: (Int , AudioFile  , Boolean ) -> Unit
+    onSleepTimer: (Int, AudioFile, Boolean) -> Unit,
+    onTrackSelected: (Int) -> Unit,
+    onRemoveTrack: (Int) -> Unit,
 ) {
     var expand by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
+    var showBottomSheet by remember {
+        mutableStateOf(false)
+    }
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("") },
                 actions = {
+                    IconButton(onClick = { showBottomSheet = true }) {
+                        Icon(Icons.Default.QueueMusic, contentDescription = "Up Next Queue")
+                    }
                     Box {
                         IconButton(onClick = { expand = true }) {
                             Icon(Icons.Default.Timer, contentDescription = "Sleep Timer")
@@ -186,6 +214,7 @@ fun MediaPlayerScreenContent(
                 }
             )
         },
+
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         Column(
@@ -284,17 +313,76 @@ fun MediaPlayerScreenContent(
                     )
                 }
             }
+            if (showBottomSheet) {
+                UpNextBottomSheet(
+                    queue = queue,
+                    currentIndex = currentIndex,
+                    onDismiss = { showBottomSheet = false },
+                    onTrackSelected = { index ->
+                        onTrackSelected(index)
+                        showBottomSheet = false
+                    },
+                    onRemoveTrack = onRemoveTrack,
+                )
+            }
         }
     }
-
-
 }
 
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun UpNextBottomSheet(
+    queue: List<AudioFile>,
+    currentIndex: Int,
+    onDismiss: () -> Unit,
+    onTrackSelected: (Int) -> Unit,
+    onRemoveTrack: (Int) -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            val remainingCount = (queue.size - currentIndex - 1).coerceAtLeast(0)
+            Text(text = "Up Next ($remainingCount songs)", style = MaterialTheme.typography.titleMedium)
+
+            LazyColumn {
+                // Section 1: Currently Playing
+                item {
+                    Text("Now Playing", style = MaterialTheme.typography.labelMedium)
+                    queue.getOrNull(currentIndex)?.let { currentSong ->
+                        AudioItem(
+                            audio = currentSong,
+                            isSelected = { true },
+                            onItemClick = {},
+                            onPlaythisNext = {},
+                            onAddToPlaylist = {},
+                        )
+                    }
+                }
+
+                // Section 2: Queue Items
+                itemsIndexed(queue.drop(currentIndex + 1)){ index , song -> run {
+                    val correctCalculated = currentIndex + index + 1
+                    Log.d("Queue Index" , "$index $correctCalculated")
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                            .clickable { onTrackSelected(correctCalculated) }
+                    ) {
+                        // Song details
+                        Text(text = song.displayName, modifier = Modifier.weight(1f))
+
+                        // Remove button
+                        IconButton(onClick = { onRemoveTrack(correctCalculated) }) {
+                            Icon(Icons.Default.Close, contentDescription = "Remove")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 
-
-@Preview(showBackground = true)
 @Composable
 fun MediaPlayerScreenContentPreview() {
     MediaPlayerScreenContent(
@@ -312,12 +400,16 @@ fun MediaPlayerScreenContentPreview() {
         ),
         repeatMode = Player.REPEAT_MODE_OFF,
         isShuffleEnabled = false,
+        queue = emptyList(),
+        currentIndex = 0,
         onStart = {},
         onNext = {},
         onPrevious = {},
         onRepeat = {},
         onShuffle = {},
-        onSleepTimer = {} as (Int, AudioFile, Boolean) -> Unit,
+        onSleepTimer = { _, _, _ -> },
+        onTrackSelected = {},
+        onRemoveTrack = {},
 
     )
-}
+}}

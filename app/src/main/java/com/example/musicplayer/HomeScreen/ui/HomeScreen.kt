@@ -46,12 +46,12 @@ import com.example.musicplayer.HomeScreen.compontent.PlaylistBottomSheet
 import com.example.musicplayer.HomeScreen.domain.model.AudioFile
 import com.example.musicplayer.MusicPlayerScreen.UI.MusicEvent
 import com.example.musicplayer.MusicPlayerScreen.UI.MusicViewModel
-import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import kotlin.math.floor
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.musicplayer.HomeScreen.compontent.Searchingbar
 import com.example.musicplayer.MusicPlayerScreen.mapper.toMediaItem
+import kotlinx.coroutines.launch
 
 enum class HomeTabs(val title: String) {
     Songs("Songs"),
@@ -96,7 +96,7 @@ fun HomeScreenRoot(
 ) {
     val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    LaunchedEffect(Unit) {
+    LaunchedEffect(key1 = Unit) {
 
         homeViewModel.uiEffect.collect {  effect ->
             when(effect){
@@ -226,8 +226,6 @@ fun HomeScreen(
                         }
                     )
                 }
-
-
                 SecondaryTabRow(
                     selectedTabIndex = pagerState.currentPage,
                 ) {
