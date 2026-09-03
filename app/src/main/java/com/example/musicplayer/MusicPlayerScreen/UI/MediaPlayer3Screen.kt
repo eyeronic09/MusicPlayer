@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Repeat
@@ -30,13 +32,16 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import com.codergalib2005.reorderable.ReorderableItem
+import com.codergalib2005.reorderable.detectReorderAfterLongPress
+import com.codergalib2005.reorderable.rememberReorderableLazyListState
+import com.codergalib2005.reorderable.reorderable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -61,6 +66,7 @@ import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import coil.compose.AsyncImage
+import com.codergalib2005.reorderable.ItemPosition
 import com.example.musicplayer.HomeScreen.compontent.AudioItem
 import com.example.musicplayer.HomeScreen.compontent.MediaPlayerController
 import com.example.musicplayer.HomeScreen.domain.model.AudioFile
@@ -86,7 +92,7 @@ object MediaPlayerTab : Tab {
     override fun Content() {
         val tabNavigator = LocalTabNavigator.current
 
-        // The 'key' function forces the entire UI inside it to be RECREATED 
+        // The 'key' function forces the entire UI inside it to be RECREATED
         // whenever the value of the key changes. Using tabNavigator.current
         // ensures a fresh recomposition whenever you switch to this tab.
         key(tabNavigator.current) {
@@ -124,7 +130,7 @@ object MediaPlayerTab : Tab {
                         millis,
                         currentSelectedAudio = audioFile,
                         setToEndFile = isEndSong,
-                    )) 
+                    ))
                 },
                 onTrackSelected = { index ->
                     viewModel.onEvent(MusicEvent.SelectedAudioIndex(index))
@@ -132,6 +138,10 @@ object MediaPlayerTab : Tab {
                 onRemoveTrack = { index ->
                     viewModel.onEvent(MusicEvent.OnRemoveFromQueue(index))
                 },
+                onReorderTrack = { fromIndex , toIndex ->
+                    viewModel.onEvent(MusicEvent.moveQueues(fromIndex , toIndex  ))
+                }
+
             )
         }
     }
@@ -157,6 +167,7 @@ fun MediaPlayerScreenContent(
     onSleepTimer: (Int, AudioFile, Boolean) -> Unit,
     onTrackSelected: (Int) -> Unit,
     onRemoveTrack: (Int) -> Unit,
+    onReorderTrack: (from: Int, to: Int) -> Unit
 ) {
     var expand by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -195,7 +206,7 @@ fun MediaPlayerScreenContent(
                                     onClick = {
                                         expand = false
                                         val isEndOfSong = label == "End of song"
-                                        val finalMillis = millis ?: 0 // Safely converts Int? to Int
+                                        val finalMillis = millis ?: 0
 
                                         onSleepTimer(finalMillis, audio, isEndOfSong)
 
@@ -323,6 +334,7 @@ fun MediaPlayerScreenContent(
                         showBottomSheet = false
                     },
                     onRemoveTrack = onRemoveTrack,
+                    onReorderTrack = onReorderTrack
                 )
             }
         }
@@ -338,15 +350,39 @@ fun UpNextBottomSheet(
     onDismiss: () -> Unit,
     onTrackSelected: (Int) -> Unit,
     onRemoveTrack: (Int) -> Unit,
+    onReorderTrack: (from: Int, to: Int) -> Unit
 ) {
+    var localQueue by remember(queue, currentIndex) {
+        mutableStateOf(queue.drop((currentIndex + 1).coerceAtLeast(0)))
+    }
+
+    val reorderState = rememberReorderableLazyListState(onMove = { from, to ->
+        if (from.index > 0 && to.index > 0) {
+            val fromPos = from.index - 1
+            val toPos = to.index - 1
+            if (fromPos in localQueue.indices && toPos in localQueue.indices) {
+                localQueue = localQueue.toMutableList().apply {
+                    add(toPos, removeAt(fromPos))
+                }
+            }
+            val fromActual = currentIndex + from.index
+            val toActual = currentIndex + to.index
+            Log.d("reorder", "Moving from $fromActual to $toActual")
+            onReorderTrack(fromActual, toActual)
+        }
+    })
+
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(modifier = Modifier.padding(16.dp)) {
-            val remainingCount = (queue.size - currentIndex - 1).coerceAtLeast(0)
+            val remainingCount = localQueue.size
             Text(text = "Up Next ($remainingCount songs)", style = MaterialTheme.typography.titleMedium)
 
-            LazyColumn {
-                // Section 1: Currently Playing
-                item {
+            LazyColumn(
+                state = reorderState.listState,
+                modifier = Modifier.reorderable(reorderState)
+            ) {
+                // Section 1: Currently Playing (Index 0 in LazyColumn)
+                item(key = "now_playing_header") {
                     Text("Now Playing", style = MaterialTheme.typography.labelMedium)
                     queue.getOrNull(currentIndex)?.let { currentSong ->
                         AudioItem(
@@ -359,21 +395,36 @@ fun UpNextBottomSheet(
                     }
                 }
 
-                // Section 2: Queue Items
-                itemsIndexed(queue.drop(currentIndex + 1)){ index , song -> run {
-                    val correctCalculated = currentIndex + index + 1
-                    Log.d("Queue Index" , "$index $correctCalculated")
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                            .clickable { onTrackSelected(correctCalculated) }
-                    ) {
-                        // Song details
-                        Text(text = song.displayName, modifier = Modifier.weight(1f))
+                // Section 2: Queue Items (Index 1+ in LazyColumn)
+                itemsIndexed(
+                    items = localQueue,
+                    key = { _, song -> song.id }
+                ) { index, song ->
+                    ReorderableItem(
+                        reorderableState = reorderState,
+                        key = song.id
+                    ) { isDragging ->
+                        val correctCalculated = currentIndex + index + 1
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onTrackSelected(correctCalculated) }
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DragHandle,
+                                contentDescription = "Drag to reorder",
+                                modifier = Modifier
+                                    .detectReorderAfterLongPress(reorderState)
+                                    .padding(end = 8.dp)
+                            )
 
-                        // Remove button
-                        IconButton(onClick = { onRemoveTrack(correctCalculated) }) {
-                            Icon(Icons.Default.Close, contentDescription = "Remove")
+                            Text(text = song.displayName, modifier = Modifier.weight(1f))
+
+                            IconButton(onClick = { onRemoveTrack(correctCalculated) }) {
+                                Icon(Icons.Default.Close, contentDescription = "Remove")
+                            }
                         }
                     }
                 }
@@ -410,6 +461,6 @@ fun MediaPlayerScreenContentPreview() {
         onSleepTimer = { _, _, _ -> },
         onTrackSelected = {},
         onRemoveTrack = {},
-
+        onReorderTrack = {_ , _ ->},
     )
-}}
+}

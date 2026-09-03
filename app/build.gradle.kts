@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.example.musicplayer"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.musicplayer"
@@ -81,6 +81,11 @@ dependencies {
     implementation(libs.androidx.media3.extractor)
 
     implementation(libs.coil.compose)
+
+    // Reorderable Compose List
+    implementation("com.github.codergalib2005:compose-reorderable:1.0.0")
+    implementation("sh.calvin.reorderable:reorderable:3.1.0")
+    implementation("org.burnoutcrew.composereorderable:reorderable:0.9.6")
 
     // ======================================================
 

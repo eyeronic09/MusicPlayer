@@ -216,10 +216,21 @@ class MusicViewModel(
                     )
                 }
                 is MusicEvent.moveQueues -> {
-                    audioService.onPlayerEvents(PlayerEvent.onMoveQueueToNewPosition(event.fromIndex , event.toIndex))
+                    if (event.fromIndex in audioList.indices && event.toIndex in audioList.indices) {
+                        val updatedList = audioList.toMutableList().apply {
+                            add(event.toIndex, removeAt(event.fromIndex))
+                        }
+                        this@MusicViewModel.audioList = updatedList
+                    }
+                    audioService.onPlayerEvents(PlayerEvent.onMoveQueueToNewPosition(event.fromIndex, event.toIndex))
                 }
                 is MusicEvent.OnRemoveFromQueue -> {
-                    Log.d("Queue Index" , "ok about to remove")
+                    if (event.index in audioList.indices) {
+                        val updatedList = audioList.toMutableList().apply {
+                            removeAt(event.index)
+                        }
+                        this@MusicViewModel.audioList = updatedList
+                    }
                     audioService.onPlayerEvents(PlayerEvent.onRemoveFromQueue(event.index))
                 }
             }
